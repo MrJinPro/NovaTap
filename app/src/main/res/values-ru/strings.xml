@@ -1,0 +1,194 @@
+<resources>
+    <string name="app_name">NovaTap</string>
+    <string name="title_dashboard">Панель управления</string>
+    <string name="title_single_tap">Одиночное нажатие</string>
+    <string name="title_multi_tap">Мульти-нажатие</string>
+    <string name="title_area_tap">Нажатие по зоне</string>
+    <string name="title_swipe">Свайп-жесты</string>
+    <string name="title_scenarios">Сценарии</string>
+    <string name="title_settings">Настройки</string>
+    <string name="title_help">Справочный центр</string>
+    <string name="title_preset_saved">Пресет сохранен</string>
+
+    <string name="nav_home">Главная</string>
+    <string name="nav_presets">Пресеты</string>
+    <string name="nav_scenarios">Сценарии</string>
+    <string name="nav_help">Справка</string>
+    <string name="nav_settings">Настройки</string>
+
+    <!-- Monetization & Limits -->
+    <string name="premium_ad_free">NovaTap Без Рекламы</string>
+    <string name="remove_ads">Отключить рекламу</string>
+    <string name="premium_description">Разблокируйте полную силу автоматизации</string>
+    <string name="benefit_no_ads">Никакой рекламы</string>
+    <string name="benefit_infinite_actions">Безлимитные действия каждый день</string>
+    <string name="benefit_unlimited_scenarios">Неограниченное число сценариев</string>
+    <string name="benefit_unlimited_exports">Неограниченный экспорт</string>
+    <string name="sub_text">0.99$ / месяц</string>
+    <string name="limit_reached_title">Дневной лимит исчерпан</string>
+    <string name="limit_reached_desc">Вы исчерпали бесплатные 50 000 действий на сегодня. Удалите лимиты действий или посмотрите короткое видео, чтобы получить ещё!</string>
+    <string name="action_watch_ad">Смотреть рекламу</string>
+    <string name="ad_reward_success">Получено еще +50 000 действий!</string>
+
+    <!-- Stats & Header -->
+    <string name="stat_today_usage">Использование за сегодня</string>
+    <string name="stat_remaining_actions">Оставшиеся действия</string>
+    <string name="stat_status">Статус подписки</string>
+    <string name="status_free">Бесплатная (действуют лимиты)</string>
+    <string name="status_premium">Без Рекламы (Активна)</string>
+    <string name="btn_quick_start">Быстрый старт</string>
+
+    <!-- General Controls -->
+    <string name="btn_start">Старт</string>
+    <string name="btn_pause">Пауза</string>
+    <string name="btn_stop">Стоп</string>
+    <string name="btn_save">Сохранить</string>
+    <string name="btn_load">Загрузить</string>
+    <string name="btn_delete">Удалить</string>
+    <string name="btn_add">Добавить</string>
+    <string name="btn_cancel">Отмена</string>
+    <string name="btn_ok">OK</string>
+    <string name="btn_close">Закрыть</string>
+    <string name="btn_back">Назад</string>
+    <string name="btn_next">Далее</string>
+    <string name="label_enabled">Включено</string>
+    <string name="label_disabled">Отключено</string>
+
+    <!-- Single Tap & Multi Tap Setup -->
+    <string name="x_coordinate">Координата X (пиксели)</string>
+    <string name="y_coordinate">Координата Y (пиксели)</string>
+    <string name="interval_ms">Интервал (мс)</string>
+    <string name="hold_ms">Удержание (мс)</string>
+    <string name="repeat_count">Повторы (0 = бесконечно)</string>
+    <string name="infinite_mode">Бесконечный режим</string>
+    <string name="error_min_interval">Внимание: Минимальный интервал нажатия — 40 мс. Меньшие значения отключены ради безопасности.</string>
+    <string name="error_min_hold">Внимание: Минимальное удержание — 40 мс. Меньшие значения отключены ради безопасности.</string>
+    <string name="preset_name">Название пресета</string>
+    <string name="preset_placeholder">Мой пресет</string>
+
+    <!-- Multi Tap -->
+    <string name="multi_tap_mode">Режим выполнения</string>
+    <string name="mode_sequential">Последовательный</string>
+    <string name="mode_random_order">Случайный порядок</string>
+    <string name="mode_loop">Цикл</string>
+    <string name="points_count">Активных точек: %d</string>
+    <string name="add_point_hint">Нажмите \"Добавить точку\" или коснитесь экрана в редакторе, чтобы добавить точки клика (макс. 20).</string>
+
+    <!-- Area Tap -->
+    <string name="draw_allowed">Разрешенные зоны (Зелёные)</string>
+    <string name="draw_blocked">Заблокированные зоны (Красные)</string>
+    <string name="zone_type">Тип зоны</string>
+    <string name="zone_rect">Прямоугольник</string>
+    <string name="zone_circle">Круг</string>
+    <string name="randomization_mode">Режим рандомизации</string>
+    <string name="mode_true_random">Случайное распределение</string>
+    <string name="mode_center_weighted">Ближе к центру</string>
+    <string name="mode_balanced_random">Сбалансированный случайный</string>
+    <string name="zone_probability">Вероятность зоны (%)</string>
+    <string name="no_zones_hint">Зоны не созданы. Добавьте разрешенные или заблокированные зоны ниже.</string>
+    <string name="allowed_zones_header">Разрешенные зоны</string>
+    <string name="blocked_zones_header">Заблокированные зоны</string>
+    <string name="prob_warning">Сумма вероятностей должна составлять 100%! Сейчас: %1$d%%. Будет перебалансировано автоматически.</string>
+
+    <!-- Swipe Module -->
+    <string name="swipe_start">Начало свайпа (X, Y)</string>
+    <string name="swipe_end">Конец свайпа (X, Y)</string>
+    <string name="duration_ms">Длительность (мс)</string>
+    <string name="humanized_movement">Симуляция очеловеченной траектории</string>
+
+    <!-- Real Human Touch Engine settings -->
+    <string name="human_engine_header">Движок Human Touch</string>
+    <string name="human_engine_enable">Включить микро-рандомизацию</string>
+    <string name="random_interval_range">Разброс случайного интервала (мс)</string>
+    <string name="random_hold_range">Разброс случайного удержания (мс)</string>
+    <string name="micro_offset_px">Микро-смещение позиции (пиксели)</string>
+    <string name="random_path_gen">Строить изогнутый путь для свайпов</string>
+    <string name="multi_finger_sim">Симуляция мультитача</string>
+    <string name="fingers_1">1 палец</string>
+    <string name="fingers_2">2 пальца</string>
+    <string name="fingers_3">3 пальца</string>
+
+    <!-- Scenario Builder -->
+    <string name="scenario_step_tap">Клик по координатам</string>
+    <string name="scenario_step_area">Нажатие в зоне</string>
+    <string name="scenario_step_swipe">Свайп жест</string>
+    <string name="scenario_step_wait">Ожидание (мс)</string>
+    <string name="scenario_step_loop">Цикл к началу</string>
+    <string name="add_step">Добавить шаг</string>
+    <string name="step_label">Шаг %1$d: %2$s</string>
+    <string name="no_steps_hint">Нет шагов в этом сценарии. Создайте шаги с помощью кнопок внизу.</string>
+
+    <!-- Float Control Panel Overlay -->
+    <string name="float_opacity">Прозрачность панели</string>
+    <string name="float_auto_hide">Скрывать панель при автокликах</string>
+    <string name="drag_handle_desc">Перетащите панель для изменения позиции</string>
+
+    <!-- First Launch Onboarding -->
+    <string name="onboarding_welcome_title">Добро пожаловать в NovaTap!</string>
+    <string name="onboarding_welcome_desc">Автоматизируйте клики, свайпы и сложные области экрана с помощью передового алгоритма Human Touch.</string>
+    <string name="onboarding_accessibility_title">Служба специальных возможностей</string>
+    <string name="onboarding_accessibility_desc">NovaTap требует разрешение специальной возможности для эмуляции нажатий и жестов свайпа по экрану. Личные данные не собираются и не передаются.</string>
+    <string name="onboarding_overlay_title">Разрешение поверх приложений</string>
+    <string name="onboarding_overlay_desc">Это приложение использует плавающий интерфейс поверх других приложений для управления автокликером в реальном времени.</string>
+    <string name="onboarding_battery_title">Оптимизация батареи</string>
+    <string name="onboarding_battery_desc">Чтобы избежать внезапных пауз или отключения службы в фоне, добавьте приложение NovaTap в исключения энергосбережения.</string>
+    <string name="grant_permission">Предоставить доступ</string>
+    <string name="permission_granted">Предоставлено</string>
+    <string name="btn_get_started">Начать работу</string>
+
+    <!-- Settings Screen -->
+    <string name="setting_theme">Цветовая тема</string>
+    <string name="theme_system">Системная тема</string>
+    <string name="theme_dark">Тёмная космическая тема</string>
+    <string name="theme_light">Светлая тема</string>
+    <string name="setting_language">Язык / Language</string>
+    <string name="lang_english">English (US)</string>
+    <string name="lang_russian">Русский (RU)</string>
+    <string name="setting_stats_header">Статистика и данные</string>
+    <string name="btn_reset_stats">Сбросить её за сегодня</string>
+    <string name="stats_reset_success">Статистика успешно сброшена.</string>
+    <string name="btn_backup">Резервная копия локально</string>
+    <string name="backup_success">Локальное резервное копирование успешно завершено.</string>
+
+    <!-- Safety Banner & Ads -->
+    <string name="active_automation_ad_notice">Реклама отключена во время активной автоматизации для вашей продуктивности.</string>
+    <string name="mock_ad_space">Google AdMob: Место под баннер</string>
+    
+    <!-- Help / Tutorials Guides -->
+    <string name="help_intro">Выберите руководство, чтобы узнать больше о механиках автоматизации:</string>
+    <string name="guide_single_tap_title">Одиночное нажатие</string>
+    <string name="guide_single_tap_desc">Научитесь размещать фиксированную цель-кликер в любом месте экрана с миллисекундной точностью временных задержек.</string>
+    <string name="guide_multi_tap_title">Мульти-нажатия</string>
+    <string name="guide_multi_tap_desc">Нужны сложные циклические клики в нескольких местах экрана? Настройте до 20 точек с индивидуальными задержками.</string>
+    <string name="guide_area_tap_title">Клик по зонам (флагманская фича)</string>
+    <string name="guide_area_tap_desc">Самая безопасная симуляция! Нарисуйте разрешенные (зелёные) и запрещенные (красные) зоны. Алгоритм будет кликать случайно только внутри разрешенных областей.</string>
+    <string name="guide_swipe_title">Свайпы и перетаскивания</string>
+    <string name="guide_swipe_desc">Имитируйте плавные движения по траекториям. Настраивайте удержание и стройте очеловеченные нелинейные кривые.</string>
+    <string name="guide_scenarios_title">Создание Сценариев</string>
+    <string name="guide_scenarios_desc">Объединяйте одиночные клики, паузы, свайп-движения и клики по зонам в полноценные цепочки автоматизированного сценария.</string>
+
+    <!-- Validation Alerts -->
+    <string name="validation_error_title">Ошибка проверки автоматизации</string>
+    <string name="validation_acc_service_missing">Служба специальных возможностей не подключена. Пожалуйста, включите NovaTap в настройках спец. возможностей устройства, чтобы приложение могло эмулировать нажатия.</string>
+    <string name="validation_overlay_missing">Отсутствует разрешение поверх приложений. Пожалуйста, включите отображение поверх других приложений для поддержки плавающих панелей.</string>
+    <string name="validation_coords_invalid">Недопустимые координаты. Пожалуйста, укажите корректные положительные координаты для целей нажатия.</string>
+    <string name="validation_no_multi_points">Нет точек нажатия. Пожалуйста, добавьте хотя бы одну точку в редакторе.</string>
+    <string name="validation_no_area_zones">Зоны не настроены. Пожалуйста, добавьте хотя бы одну зелёную разрешенную область для автоклика по зонам.</string>
+    <string name="validation_invalid_scenario">Сценарий пуст или невалиден. Пожалуйста, создайте цепочку шагов перед запуском.</string>
+    <string name="validation_service_uninitialized">Служба автокликера не инициализирована. Пожалуйста, подождите или перезапустите приложение.</string>
+
+    <!-- Diagnostics & Status -->
+    <string name="title_diagnostics">Диагностика</string>
+    <string name="title_crash_logs">Логи падений</string>
+    <string name="empty_logs">Логи падений не обнаружены.</string>
+    <string name="log_copied">Логи скопированы в буфер обмена!</string>
+    <string name="log_cleared">Логи успешно очищены!</string>
+    <string name="btn_copy_logs">Копировать логи</string>
+    <string name="btn_clear_logs">Очистить логи</string>
+    <string name="btn_export_logs">Экспорт логов</string>
+    <string name="export_success">Логи успешно экспортированы!</string>
+    <string name="device_status">Состояние системы</string>
+    <string name="status_granted">Разрешено</string>
+    <string name="status_missing">Отсутствует</string>
+    <string name="reopen_settings">Настройки</string>
+</resources>

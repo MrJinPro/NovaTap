@@ -1,0 +1,194 @@
+<resources>
+    <string name="app_name">NovaTap</string>
+    <string name="title_dashboard">Dashboard</string>
+    <string name="title_single_tap">Single Tap</string>
+    <string name="title_multi_tap">Multi Tap</string>
+    <string name="title_area_tap">Area Tap</string>
+    <string name="title_swipe">Swipe Actions</string>
+    <string name="title_scenarios">Scenarios</string>
+    <string name="title_settings">Settings</string>
+    <string name="title_help">Help Center</string>
+    <string name="title_preset_saved">Preset Saved</string>
+
+    <string name="nav_home">Home</string>
+    <string name="nav_presets">Presets</string>
+    <string name="nav_scenarios">Scenarios</string>
+    <string name="nav_help">Help</string>
+    <string name="nav_settings">Settings</string>
+
+    <!-- Monetization & Limits -->
+    <string name="premium_ad_free">NovaTap Ad-Free</string>
+    <string name="remove_ads">Remove Ads</string>
+    <string name="premium_description">Unlock full power of automation</string>
+    <string name="benefit_no_ads">No advertisements</string>
+    <string name="benefit_infinite_actions">Unlimited daily actions</string>
+    <string name="benefit_unlimited_scenarios">Unlimited scenarios</string>
+    <string name="benefit_unlimited_exports">Unlimited exports</string>
+    <string name="sub_text">$0.99/month</string>
+    <string name="limit_reached_title">Daily Limit Reached</string>
+    <string name="limit_reached_desc">You have used up your free 50,000 actions for today. Remove actions limits or watch a short video to get more!</string>
+    <string name="action_watch_ad">Watch Ad</string>
+    <string name="ad_reward_success">Granted +50,000 actions!</string>
+
+    <!-- Stats & Header -->
+    <string name="stat_today_usage">Today\'s Usage</string>
+    <string name="stat_remaining_actions">Remaining Actions</string>
+    <string name="stat_status">Ad-Free Status</string>
+    <string name="status_free">Free (Limits Active)</string>
+    <string name="status_premium">Ad-Free (Active)</string>
+    <string name="btn_quick_start">Quick Start</string>
+
+    <!-- General Controls -->
+    <string name="btn_start">Start</string>
+    <string name="btn_pause">Pause</string>
+    <string name="btn_stop">Stop</string>
+    <string name="btn_save">Save</string>
+    <string name="btn_load">Load</string>
+    <string name="btn_delete">Delete</string>
+    <string name="btn_add">Add</string>
+    <string name="btn_cancel">Cancel</string>
+    <string name="btn_ok">OK</string>
+    <string name="btn_close">Close</string>
+    <string name="btn_back">Back</string>
+    <string name="btn_next">Next</string>
+    <string name="label_enabled">Enabled</string>
+    <string name="label_disabled">Disabled</string>
+
+    <!-- Single Tap & Multi Tap Setup -->
+    <string name="x_coordinate">X Coordinate (px)</string>
+    <string name="y_coordinate">Y Coordinate (px)</string>
+    <string name="interval_ms">Interval (ms)</string>
+    <string name="hold_ms">Hold Duration (ms)</string>
+    <string name="repeat_count">Repeat Count (0 = Infinite)</string>
+    <string name="infinite_mode">Infinite Mode</string>
+    <string name="error_min_interval">Warning: Minimum tap interval is 40ms. Lower values are not allowed for safety.</string>
+    <string name="error_min_hold">Warning: Minimum hold duration is 40ms. Lower values are not allowed for safety.</string>
+    <string name="preset_name">Preset Name</string>
+    <string name="preset_placeholder">My Preset</string>
+
+    <!-- Multi Tap -->
+    <string name="multi_tap_mode">Execution Mode</string>
+    <string name="mode_sequential">Sequential</string>
+    <string name="mode_random_order">Random Order</string>
+    <string name="mode_loop">Loop</string>
+    <string name="points_count">Points Active: %d</string>
+    <string name="add_point_hint">Tap \"Add Point\" or tap screen inside Editor to add tap points (max 20).</string>
+
+    <!-- Area Tap -->
+    <string name="draw_allowed">Draw Allowed Zones (Green)</string>
+    <string name="draw_blocked">Draw Blocked Zones (Red)</string>
+    <string name="zone_type">Zone Type</string>
+    <string name="zone_rect">Rectangle</string>
+    <string name="zone_circle">Circle</string>
+    <string name="randomization_mode">Randomization Mode</string>
+    <string name="mode_true_random">True Random</string>
+    <string name="mode_center_weighted">Center Weighted</string>
+    <string name="mode_balanced_random">Balanced Random</string>
+    <string name="zone_probability">Zone Probability (%)</string>
+    <string name="no_zones_hint">No zones declared yet. Add allowed or blocked zones below.</string>
+    <string name="allowed_zones_header">Allowed Zones</string>
+    <string name="blocked_zones_header">Blocked Zones</string>
+    <string name="prob_warning">Sum of probabilities should be 100%! Current sum: %1$d%%. Re-balancing automatically.</string>
+
+    <!-- Swipe Module -->
+    <string name="swipe_start">Start Point (X, Y)</string>
+    <string name="swipe_end">End Point (X, Y)</string>
+    <string name="duration_ms">Duration (ms)</string>
+    <string name="humanized_movement">Humanized Path Simulation</string>
+
+    <!-- Real Human Touch Engine settings -->
+    <string name="human_engine_header">Human Touch Engine</string>
+    <string name="human_engine_enable">Enable Micro-Randomization</string>
+    <string name="random_interval_range">Random Interval Offset (ms)</string>
+    <string name="random_hold_range">Random Hold Offset (ms)</string>
+    <string name="micro_offset_px">Micro Position Offset (px)</string>
+    <string name="random_path_gen">Generate Curved Natural Paths (Swipe)</string>
+    <string name="multi_finger_sim">Multi-Finger Simulation</string>
+    <string name="fingers_1">1 Finger</string>
+    <string name="fingers_2">2 Fingers</string>
+    <string name="fingers_3">3 Fingers</string>
+
+    <!-- Scenario Builder -->
+    <string name="scenario_step_tap">Tap Point</string>
+    <string name="scenario_step_area">Area Tap</string>
+    <string name="scenario_step_swipe">Swipe Action</string>
+    <string name="scenario_step_wait">Wait (ms)</string>
+    <string name="scenario_step_loop">Loop Back</string>
+    <string name="add_step">Add Step</string>
+    <string name="step_label">Step %1$d: %2$s</string>
+    <string name="no_steps_hint">No steps in this scenario. Create steps using the buttons below.</string>
+
+    <!-- Float Control Panel Overlay -->
+    <string name="float_opacity">Panel Opacity</string>
+    <string name="float_auto_hide">Auto-Hide Panel (While Clicking)</string>
+    <string name="drag_handle_desc">Drag to reposition panel</string>
+
+    <!-- First Launch Onboarding -->
+    <string name="onboarding_welcome_title">Welcome to NovaTap!</string>
+    <string name="onboarding_welcome_desc">Automate clicks, swipes, and complex screen zones safely with our premium Human Touch Engine.</string>
+    <string name="onboarding_accessibility_title">Accessibility Service</string>
+    <string name="onboarding_accessibility_desc">NovaTap requires the Accessibility Service Permission to perform automated gestures (clicks/swipes) on your screen. No personal data is read or collected.</string>
+    <string name="onboarding_overlay_title">Overlay Permission</string>
+    <string name="onboarding_overlay_desc">This app uses drawing overlays to present floating controls over any game or app you run. Grant this permission to enjoy float-clicking.</string>
+    <string name="onboarding_battery_title">Battery Optimization</string>
+    <string name="onboarding_battery_desc">To prevent your screen clicks from freezing or background services from getting closed randomly, exclude NovaTap from battery restrictions.</string>
+    <string name="grant_permission">Grant Permission</string>
+    <string name="permission_granted">Granted</string>
+    <string name="btn_get_started">Get Started</string>
+
+    <!-- Settings Screen -->
+    <string name="setting_theme">Theme</string>
+    <string name="theme_system">System Default</string>
+    <string name="theme_dark">Dark Space Theme</string>
+    <string name="theme_light">Light Space Theme</string>
+    <string name="setting_language">Language / Язык</string>
+    <string name="lang_english">English (US)</string>
+    <string name="lang_russian">Русский (RU)</string>
+    <string name="setting_stats_header">Data &amp; Stats</string>
+    <string name="btn_reset_stats">Reset Today\'s Statistics</string>
+    <string name="stats_reset_success">Statistics have been reset.</string>
+    <string name="btn_backup">Backup Config / DB</string>
+    <string name="backup_success">Database Backup complete locally.</string>
+
+    <!-- Safety Banner & Ads -->
+    <string name="active_automation_ad_notice">Ads are disabled during active click sessions for seamless focus.</string>
+    <string name="mock_ad_space">Google AdMob: Banner space</string>
+    
+    <!-- Help / Tutorials Guides -->
+    <string name="help_intro">Choose a guide to learn about modern touch automation mechanics:</string>
+    <string name="guide_single_tap_title">Single Tap Guide</string>
+    <string name="guide_single_tap_desc">Learn how to place a constant target clicker anywhere on the screen with milliseconds frequency precision.</string>
+    <string name="guide_multi_tap_title">Multi Tap Guide</string>
+    <string name="guide_multi_tap_desc">Need complex sequential loop clickers? Set up up to 20 nodes with delay timings in sequential or stochastic loop orders.</string>
+    <string name="guide_area_tap_title">Area Tap Flagship Guide</string>
+    <string name="guide_area_tap_desc">The safest clicker mechanism! Outline allowed (green) and blocked (red) zones. Our engine will randomize clicks inside valid spots, never crossing red-lines.</string>
+    <string name="guide_swipe_title">Swipe &amp; Drag Guide</string>
+    <string name="guide_swipe_desc">Simulate curved dragging gestures. Tweak duration to emulate slow drifts or quick swipes with Humanized Noise paths.</string>
+    <string name="guide_scenarios_title">Scenario Automation Guide</string>
+    <string name="guide_scenarios_desc">Combine single taps, wait states, swipe strokes, and area taps to form complete chains of interactions.</string>
+
+    <!-- Validation Alerts -->
+    <string name="validation_error_title">Automation Validation Failed</string>
+    <string name="validation_acc_service_missing">Accessibility Service is not connected. Please enable NovaTap in your device Accessibility Settings so the app can perform clicking gestures.</string>
+    <string name="validation_overlay_missing">Overlay Permission is missing. Please enable \"Draw over other apps\" to support floating automation controllers.</string>
+    <string name="validation_coords_invalid">Invalid Coordinates. Please enter positive, valid coordinate values for tapping targets.</string>
+    <string name="validation_no_multi_points">No tap points. Please place at least one point inside the layout editor first.</string>
+    <string name="validation_no_area_zones">No area zones. Please configure at least one green Allowed Zone for stochastic area tapping.</string>
+    <string name="validation_invalid_scenario">Scenario is not valid or has no steps. Please build a sequence chain first.</string>
+    <string name="validation_service_uninitialized">Service is not initialized yet. Please wait or restart the app.</string>
+
+    <!-- Diagnostics & Status -->
+    <string name="title_diagnostics">Diagnostics</string>
+    <string name="title_crash_logs">Crash Logs</string>
+    <string name="empty_logs">No crash logs found.</string>
+    <string name="log_copied">Crash logs copied to clipboard!</string>
+    <string name="log_cleared">Crash logs cleared!</string>
+    <string name="btn_copy_logs">Copy Logs</string>
+    <string name="btn_clear_logs">Clear Logs</string>
+    <string name="btn_export_logs">Export Logs</string>
+    <string name="export_success">Logs exported successfully!</string>
+    <string name="device_status">System Status</string>
+    <string name="status_granted">Granted</string>
+    <string name="status_missing">Missing</string>
+    <string name="reopen_settings">Open Settings</string>
+</resources>

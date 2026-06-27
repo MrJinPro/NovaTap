@@ -1,0 +1,45 @@
+<?xml version="1.0" encoding="utf-8"?>
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+
+    <!-- Outer Concentric Ring -->
+    <path
+        android:fillColor="#00000000"
+        android:strokeColor="#7B5CFF"
+        android:strokeWidth="3.5"
+        android:strokeLineCap="round"
+        android:pathData="M 54, 54 m -24, 0 a 24,24 0 1,0 48,0 a 24,24 0 1,0 -48,0" />
+
+    <!-- Inner Target Dot -->
+    <path
+        android:fillColor="#00C8FF"
+        android:pathData="M 54, 54 m -10, 0 a 10,10 0 1,0 20,0 a 10,10 0 1,0 -20,0" />
+
+    <!-- Sleek Tech Lightning Spark 1 -->
+    <path
+        android:fillColor="#00C8FF"
+        android:pathData="M 28,28 L 36,36 M 22,34 L 30,38"
+        android:strokeColor="#00C8FF"
+        android:strokeWidth="2.5"
+        android:strokeLineCap="round" />
+
+    <!-- Sleek Tech Lightning Spark 2 -->
+    <path
+        android:fillColor="#7B5CFF"
+        android:pathData="M 34,22 L 38,30"
+        android:strokeColor="#7B5CFF"
+        android:strokeWidth="2.5"
+        android:strokeLineCap="round" />
+
+    <!-- High-tech Gaming Style Pointer Cursor pointing to Center (54,54) -->
+    <path
+        android:fillColor="#FFFFFF"
+        android:strokeColor="#7B5CFF"
+        android:strokeWidth="1.5"
+        android:strokeLineJoin="round"
+        android:pathData="M 54,54 L 54,78 L 62,71 L 74,83 L 81,76 L 69,64 L 78,54 Z" />
+
+</vector>
