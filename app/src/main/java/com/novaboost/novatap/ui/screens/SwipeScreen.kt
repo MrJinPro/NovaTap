@@ -45,7 +45,10 @@ fun SwipeScreen(
     var bActivePresetName by remember { mutableStateOf("My Swipe Preset") }
     var intervalMs by remember { mutableStateOf("1000") }
     var swipeDurationMs by remember { mutableStateOf("300") }
-    var repeats by remember { mutableStateOf("0") }
+    var repeats by remember { mutableStateOf("100") }
+    var stopConditionType by remember { mutableStateOf("infinite") } // "infinite", "duration", "clicks"
+    var stopDurationAmount by remember { mutableStateOf("10") }
+    var stopDurationUnit by remember { mutableStateOf("seconds") } // "seconds", "minutes", "hours"
     var pathHumanized by remember { mutableStateOf(true) }
 
     // Swipe coordinates
@@ -61,6 +64,9 @@ fun SwipeScreen(
         intervalMs = preset.intervalMs.toString()
         swipeDurationMs = preset.holdMs.toString()
         repeats = preset.repeatCount.toString()
+        stopConditionType = preset.stopConditionType
+        stopDurationAmount = preset.stopDurationAmount.toString()
+        stopDurationUnit = preset.stopDurationUnit
         pathHumanized = preset.humanTouchEnabled
 
         startX = viewModel.swipeCoordinates.startX
@@ -273,6 +279,19 @@ fun SwipeScreen(
                 )
             }
 
+            // Universal stop condition configuration (all modes)
+            StopConditionSelector(
+                isRu = isRu,
+                stopConditionType = stopConditionType,
+                onStopConditionTypeChange = { stopConditionType = it },
+                stopDurationAmount = stopDurationAmount,
+                onStopDurationAmountChange = { stopDurationAmount = it },
+                stopDurationUnit = stopDurationUnit,
+                onStopDurationUnitChange = { stopDurationUnit = it },
+                repeats = repeats,
+                onRepeatsChange = { repeats = it }
+            )
+
             // DB SAVING (Expert)
             if (viewModel.isExpertMode) {
                 Card(
@@ -293,6 +312,10 @@ fun SwipeScreen(
                                     name = bActivePresetName,
                                     intervalMs = intervalMs.toLongOrNull()?.coerceAtLeast(100) ?: 1000,
                                     holdMs = swipeDurationMs.toLongOrNull()?.coerceAtLeast(100) ?: 300,
+                                    repeatCount = repeats.toIntOrNull() ?: 0,
+                                    stopConditionType = stopConditionType,
+                                    stopDurationAmount = stopDurationAmount.toLongOrNull() ?: 10L,
+                                    stopDurationUnit = stopDurationUnit,
                                     humanTouchEnabled = pathHumanized
                                 )
                                 viewModel.activeSwipePreset = activeVal
@@ -323,6 +346,9 @@ fun SwipeScreen(
                         intervalMs = finalInt,
                         holdMs = finalSwipeDur,
                         repeatCount = repeats.toIntOrNull() ?: 0,
+                        stopConditionType = stopConditionType,
+                        stopDurationAmount = stopDurationAmount.toLongOrNull() ?: 10L,
+                        stopDurationUnit = stopDurationUnit,
                         pointsJson = "",
                         zonesJson = "",
                         humanTouchEnabled = pathHumanized

@@ -46,6 +46,10 @@ fun AreaTapScreen(
     var bActivePresetName by remember { mutableStateOf("My Area Preset") }
     var intervalMs by remember { mutableStateOf("400") }
     var holdMs by remember { mutableStateOf("40") }
+    var repeats by remember { mutableStateOf("100") }
+    var stopConditionType by remember { mutableStateOf("infinite") } // "infinite", "duration", "clicks"
+    var stopDurationAmount by remember { mutableStateOf("10") }
+    var stopDurationUnit by remember { mutableStateOf("seconds") } // "seconds", "minutes", "hours"
     var distributionMode by remember { mutableStateOf("balanced_random") } // "true_random", "center_weighted", "balanced_random"
     var isDrawingAllowed by remember { mutableStateOf(true) } // DrawAllowed vs DrawBlocked
     var isDrawingRect by remember { mutableStateOf(true) } // Rect vs Circle shapes
@@ -55,6 +59,10 @@ fun AreaTapScreen(
         bActivePresetName = preset.name
         intervalMs = preset.intervalMs.toString()
         holdMs = "40"
+        repeats = preset.repeatCount.toString()
+        stopConditionType = preset.stopConditionType
+        stopDurationAmount = preset.stopDurationAmount.toString()
+        stopDurationUnit = preset.stopDurationUnit
         distributionMode = preset.mode
     }
 
@@ -346,10 +354,23 @@ fun AreaTapScreen(
             OutlinedTextField(
                 value = intervalMs,
                 onValueChange = { intervalMs = it },
-                label = { Text(if (isRu) "Пауза зон (мс)" else "Zones Pause (ms)") },
+                label = { Text(if (isRu) "Паза зон (мс)" else "Zones Pause (ms)") },
                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                 modifier = Modifier.fillMaxWidth(),
                 shape = RoundedCornerShape(12.dp)
+            )
+
+            // Universal stop condition configuration (all modes)
+            StopConditionSelector(
+                isRu = isRu,
+                stopConditionType = stopConditionType,
+                onStopConditionTypeChange = { stopConditionType = it },
+                stopDurationAmount = stopDurationAmount,
+                onStopDurationAmountChange = { stopDurationAmount = it },
+                stopDurationUnit = stopDurationUnit,
+                onStopDurationUnitChange = { stopDurationUnit = it },
+                repeats = repeats,
+                onRepeatsChange = { repeats = it }
             )
 
             // IF EXPERT DB / METADATA Saving lists
@@ -371,6 +392,10 @@ fun AreaTapScreen(
                                     name = bActivePresetName,
                                     intervalMs = intervalMs.toLongOrNull()?.coerceAtLeast(10) ?: 400,
                                     holdMs = 10,
+                                    repeatCount = repeats.toIntOrNull() ?: 0,
+                                    stopConditionType = stopConditionType,
+                                    stopDurationAmount = stopDurationAmount.toLongOrNull() ?: 10L,
+                                    stopDurationUnit = stopDurationUnit,
                                     mode = distributionMode
                                 )
                                 viewModel.activeAreaTapPreset = activeVal
@@ -400,7 +425,10 @@ fun AreaTapScreen(
                         type = "area",
                         intervalMs = finalInt,
                         holdMs = finalHold,
-                        repeatCount = 0,
+                        repeatCount = repeats.toIntOrNull() ?: 0,
+                        stopConditionType = stopConditionType,
+                        stopDurationAmount = stopDurationAmount.toLongOrNull() ?: 10L,
+                        stopDurationUnit = stopDurationUnit,
                         mode = distributionMode,
                         pointsJson = "",
                         zonesJson = "",

@@ -44,7 +44,10 @@ fun MultiTapScreen(
     var presetName by remember { mutableStateOf("My Multi Preset") }
     var intervalMs by remember { mutableStateOf("300") }
     var holdMs by remember { mutableStateOf("50") }
-    var repeats by remember { mutableStateOf("0") }
+    var repeats by remember { mutableStateOf("100") }
+    var stopConditionType by remember { mutableStateOf("infinite") } // "infinite", "duration", "clicks"
+    var stopDurationAmount by remember { mutableStateOf("10") }
+    var stopDurationUnit by remember { mutableStateOf("seconds") } // "seconds", "minutes", "hours"
     var seqMode by remember { mutableStateOf("sequential") } // "sequential", "random_order", "loop"
     var humanTouchEnabled by remember { mutableStateOf(false) }
     var activeEditPoint by remember { mutableStateOf<com.novaboost.novatap.data.model.TapPoint?>(null) }
@@ -55,6 +58,9 @@ fun MultiTapScreen(
         intervalMs = preset.intervalMs.toString()
         holdMs = preset.holdMs.toString()
         repeats = preset.repeatCount.toString()
+        stopConditionType = preset.stopConditionType
+        stopDurationAmount = preset.stopDurationAmount.toString()
+        stopDurationUnit = preset.stopDurationUnit
         seqMode = preset.mode
         humanTouchEnabled = preset.humanTouchEnabled
     }
@@ -265,10 +271,13 @@ fun MultiTapScreen(
                     }
                 }
             }
-
-            // ORDER / SEQUENCE MODES Choice
             Text(
-                text = if (isRu) "Режим порядка клико�            Row(
+                text = if (isRu) "Порядок переключения точек:" else "Point execution sequence:",
+                style = MaterialTheme.typography.titleSmall,
+                fontWeight = FontWeight.Bold,
+                color = MaterialTheme.colorScheme.primary
+            )
+            Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.spacedBy(8.dp)
             ) {
@@ -348,12 +357,6 @@ fun MultiTapScreen(
                             colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.secondary)
                         ) {
                             Icon(imageVector = Icons.Default.Save, contentDescription = "Save")
-                            Spacer(modifier = Modifier.width(8.dp))
-                            Text(if (isRu) "Сохранить пресет в базу" else "Commit Preset Database")
-                        }
-                    }
-                }
-            }tor = Icons.Default.Save, contentDescription = "Save")
                             Spacer(modifier = Modifier.width(8.dp))
                             Text(if (isRu) "Сохранить пресет в базу" else "Commit Preset Database")
                         }
