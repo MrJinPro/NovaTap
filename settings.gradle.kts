@@ -22,6 +22,6 @@ dependencyResolutionManagement {
   }
 }
 
-rootProject.name = "NovaTap"
+rootProject.name = "My Application"
 
 include(":app")

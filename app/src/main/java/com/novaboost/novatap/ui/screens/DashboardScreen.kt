@@ -91,7 +91,14 @@ fun DashboardScreen(
                 modifier = Modifier
                     .clip(RoundedCornerShape(50))
                     .background(Color.White.copy(alpha = 0.05f))
-                    .clickable { viewModel.removeAdsService() }
+                    .clickable {
+                        val activity = context as? android.app.Activity
+                        if (activity != null) {
+                            viewModel.triggerPremiumPurchase(activity)
+                        } else {
+                            viewModel.removeAdsService()
+                        }
+                    }
                     .padding(horizontal = 12.dp, vertical = 6.dp)
             ) {
                 Row(
@@ -250,7 +257,7 @@ fun DashboardScreen(
 
                         if (!isPremium) {
                             Text(
-                                text = if (isRu) "+50К ЗА ПРОСМОТР" else "+50K WITH AD",
+                                text = if (isRu) "+10К ЗА ПРОСМОТР" else "+10K WITH AD",
                                 style = MaterialTheme.typography.labelSmall.copy(
                                     fontWeight = FontWeight.Bold,
                                     letterSpacing = 0.5.sp
@@ -258,7 +265,7 @@ fun DashboardScreen(
                                 color = CyberBlue,
                                 modifier = Modifier
                                     .clip(RoundedCornerShape(4.dp))
-                                    .clickable { viewModel.rewardUserByAd() }
+                                    .clickable { viewModel.rewardUserByAd(context) }
                                     .padding(horizontal = 4.dp, vertical = 2.dp)
                             )
                         }
@@ -315,7 +322,7 @@ fun DashboardScreen(
                 // Card 3: Area Tap (Flagship!)
                 ModuleGridCard(
                     title = if (isRu) "Нажатие Зон" else "Area Tap",
-                    subtitle = if (isRu) "Расширенный режим" else "Advanced mode",
+                    subtitle = if (isRu) "ФЛАГМАНСКИЙ" else "FLAGSHIP MODULE",
                     icon = Icons.Default.FilterCenterFocus,
                     accentColor = CyberBlue,
                     isFlagship = true,
@@ -436,7 +443,7 @@ fun DashboardScreen(
                     .clip(RoundedCornerShape(16.dp))
                     .border(BorderStroke(1.dp, Color(0x1FFFFFFF)), RoundedCornerShape(16.dp))
                     .background(Color(0x0AFFFFFF))
-                    .clickable { viewModel.rewardUserByAd() },
+                    .clickable { viewModel.rewardUserByAd(context) },
                 contentAlignment = Alignment.Center
             ) {
                 Row(
@@ -451,7 +458,7 @@ fun DashboardScreen(
                         modifier = Modifier.size(18.dp)
                     )
                     Text(
-                        text = if (isRu) "Нажмите, чтобы получить дополнительные действия" else "Tap to claim extra actions",
+                        text = if (isRu) "Нажмите, чтобы бесплатно получить +10k кликов" else "Click to claim free +10k clicks",
                         style = MaterialTheme.typography.bodySmall.copy(fontWeight = FontWeight.Medium),
                         color = CyberBlue
                     )

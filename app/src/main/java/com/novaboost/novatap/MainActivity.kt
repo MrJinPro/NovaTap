@@ -8,6 +8,7 @@ import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.activity.viewModels
 import androidx.compose.animation.Crossfade
+import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.background
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.*
@@ -29,19 +30,53 @@ import androidx.compose.ui.unit.sp
 import com.novaboost.novatap.ui.screens.*
 import com.novaboost.novatap.ui.theme.NovaTapTheme
 import com.novaboost.novatap.ui.MainViewModel
+import com.novaboost.novatap.data.billing.BillingManager
+import androidx.lifecycle.lifecycleScope
 
 class MainActivity : ComponentActivity() {
 
     private val viewModel: MainViewModel by viewModels()
+    private lateinit var billingManager: BillingManager
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         
+        billingManager = BillingManager(
+            context = this,
+            coroutineScope = lifecycleScope,
+            onPremiumUnlocked = { unlocked ->
+                viewModel.setPremiumUnlocked(unlocked)
+            },
+            onMessage = { msg ->
+                viewModel.logExecution(msg, force = true)
+            }
+        )
+
+        viewModel.onTriggerPurchase = { activity ->
+            billingManager.launchSubscriptionPurchase(activity)
+        }
+
+        try {
+            com.google.android.gms.ads.MobileAds.initialize(this) {}
+            viewModel.loadInterstitialAd(this)
+            viewModel.loadRewardedAd(this)
+        } catch (e: Exception) {
+            e.printStackTrace()
+        }
+
         enableEdgeToEdge()
         
         setContent {
-            NovaTapTheme {
-                MainLayout(viewModel)
+            val isDarkTheme = when (viewModel.selectedTheme) {
+                "dark" -> true
+                "light" -> false
+                else -> isSystemInDarkTheme()
+            }
+            NovaTapTheme(darkTheme = isDarkTheme) {
+                Box(modifier = androidx.compose.ui.Modifier.fillMaxSize()) {
+                    MainLayout(viewModel)
+                    com.novaboost.novatap.ui.components.SimulatedAdPlayer(viewModel)
+                }
             }
         }
     }
@@ -50,6 +85,10 @@ class MainActivity : ComponentActivity() {
         super.onResume()
         try {
             viewModel.checkAllPermissions(this)
+            if (::billingManager.isInitialized) {
+                billingManager.queryActivePurchases()
+            }
+            viewModel.triggerShortAdOnResume(this)
         } catch (e: Exception) {
             e.printStackTrace()
             viewModel.logException(e, "MainActivityOnResume")
@@ -170,9 +209,9 @@ fun MainLayout(viewModel: MainViewModel) {
                     text = {
                         Text(
                             text = if (isRu) {
-                                "Вы использовали свободные 50 000 кликов на сегодня. Отключите лимиты навсегда или посмотрите короткое видео, чтобы получить еще +50 000 кликов!"
+                                "Вы использовали свободные 50 000 кликов на сегодня. Отключите лимиты навсегда или посмотрите короткое видео, чтобы получить еще +10 000 кликов!"
                             } else {
-                                "You have reached your daily limit of 50,000 interactions. To unlock unlimited inputs, remove ads, or watch a video to extend limits by +50,000."
+                                "You have reached your daily limit of 50,000 interactions. To unlock unlimited inputs, remove ads, or watch a video to extend limits by +10,000."
                             },
                             style = MaterialTheme.typography.bodyMedium
                         )
@@ -180,7 +219,7 @@ fun MainLayout(viewModel: MainViewModel) {
                     confirmButton = {
                         Button(
                             onClick = {
-                                viewModel.rewardUserByAd()
+                                viewModel.rewardUserByAd(context)
                             },
                             colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF10B981)),
                             shape = RoundedCornerShape(8.dp)
@@ -190,14 +229,19 @@ fun MainLayout(viewModel: MainViewModel) {
                                 horizontalArrangement = Arrangement.spacedBy(6.dp)
                             ) {
                                 Icon(imageVector = Icons.Default.SmartDisplay, contentDescription = "Watch Ad")
-                                Text(if (isRu) "Смотреть Рекламу (+50к)" else "Watch Video Ad (+50k)")
+                                Text(if (isRu) "Смотреть Рекламу (+10к)" else "Watch Video Ad (+10k)")
                             }
                         }
                     },
                     dismissButton = {
                         TextButton(
                             onClick = {
-                                viewModel.removeAdsService()
+                                val activity = context as? android.app.Activity
+                                if (activity != null) {
+                                    viewModel.triggerPremiumPurchase(activity)
+                                } else {
+                                    viewModel.removeAdsService()
+                                }
                                 viewModel.displayLimitDialog = false
                             }
                         ) {

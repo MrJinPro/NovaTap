@@ -6,6 +6,11 @@ import android.content.Intent
 import android.os.Build
 import android.provider.Settings
 import android.widget.Toast
+import android.app.NotificationManager
+import android.app.NotificationChannel
+import android.app.PendingIntent
+import androidx.core.app.NotificationCompat
+import androidx.core.content.ContextCompat
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
@@ -30,6 +35,27 @@ import java.util.Date
 import java.util.Locale
 import kotlin.random.Random
 
+data class PromoTask(
+    val id: String,
+    val titleRu: String,
+    val titleEn: String,
+    val descriptionRu: String,
+    val descriptionEn: String,
+    val targetPackage: String?,
+    val targetUrl: String,
+    val rewardTaps: Long = 0,
+    val rewardPremiumDays: Int = 0
+)
+
+fun Context.findActivity(): android.app.Activity? {
+    var context = this
+    while (context is android.content.ContextWrapper) {
+        if (context is android.app.Activity) return context
+        context = context.baseContext
+    }
+    return null
+}
+
 class MainViewModel(application: Application) : AndroidViewModel(application) {
 
     companion object {
@@ -40,6 +66,8 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
 
     private val repository: NovaRepository
 
+    var onTriggerPurchase: ((android.app.Activity) -> Unit)? = null
+
     // Settings States
     var isExpertMode by mutableStateOf(false)
     var selectedLanguage by mutableStateOf("en") // "en" / "ru"
@@ -47,6 +75,54 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     var isAdFreeUser by mutableStateOf(false)
     var isOverlayEnabled by mutableStateOf(false)
     var showTapRipples by mutableStateOf(false)
+
+    // Special Promo Tasks
+    var bonusTapsLimit by mutableStateOf(0L)
+    var premiumExpiresAt by mutableStateOf(0L)
+    var completedTaskIds by mutableStateOf<Set<String>>(emptySet())
+
+    val promoTasks = listOf(
+        PromoTask(
+            id = "novacleaner",
+            titleRu = "Установить Nova Cleaner & Booster",
+            titleEn = "Install Nova Cleaner & Booster",
+            descriptionRu = "Бесплатный оптимизатор памяти и очиститель кэша. Установите его и получите 7 дней Премиум без рекламы и лимитов!",
+            descriptionEn = "Free memory optimizer and cache cleaner. Install it to get 7 days of Premium with no ads and unlimited clicks!",
+            targetPackage = "com.novaboost.cleaner",
+            targetUrl = "https://play.google.com/store/apps/details?id=com.novaboost.cleaner",
+            rewardPremiumDays = 7
+        ),
+        PromoTask(
+            id = "novagamebooster",
+            titleRu = "Установить Nova Game Booster",
+            titleEn = "Install Nova Game Booster",
+            descriptionRu = "Ускоритель игр для максимального FPS. Установите его и получите +100,000 кликов к суточному лимиту навсегда!",
+            descriptionEn = "Game booster for maximum FPS. Install it to get +100,000 to your daily action limit forever!",
+            targetPackage = "com.novaboost.gamebooster",
+            targetUrl = "https://play.google.com/store/apps/details?id=com.novaboost.gamebooster",
+            rewardTaps = 100000L
+        ),
+        PromoTask(
+            id = "telegram_channel",
+            titleRu = "Подписаться на наш Telegram",
+            titleEn = "Join our Telegram Channel",
+            descriptionRu = "Следите за обновлениями, общайтесь и делитесь сценариями кликера. Награда: +50,000 кликов к лимиту навсегда!",
+            descriptionEn = "Follow updates, chat, and share clicker scenarios. Reward: +50,000 to your daily limit forever!",
+            targetPackage = null,
+            targetUrl = "https://t.me/novaboost_channel",
+            rewardTaps = 50000L
+        ),
+        PromoTask(
+            id = "chrometest",
+            titleRu = "[ТЕСТ] Проверить установку Google Chrome",
+            titleEn = "[TEST] Check Google Chrome Install",
+            descriptionRu = "Это тестовое задание для демонстрации работы проверки. Нажмите кнопку, чтобы получить +25,000 кликов навсегда!",
+            descriptionEn = "This is a test task to demonstrate how verification works. Click the button to get +25,000 daily clicks forever!",
+            targetPackage = "com.android.chrome",
+            targetUrl = "https://play.google.com/store/apps/details?id=com.android.chrome",
+            rewardTaps = 25000L
+        )
+    )
 
     // Statistics States
     private val _todayUsageActions = MutableStateFlow<Long>(0)
@@ -56,7 +132,15 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     val adRewardedAdditionalActions = _adRewardedAdditionalActions.asStateFlow()
 
     // Flag for limit-reached popup
-    var displayLimitDialog by mutableStateOf(false)
+    private var _displayLimitDialog by mutableStateOf(false)
+    var displayLimitDialog: Boolean
+        get() = _displayLimitDialog
+        set(value) {
+            _displayLimitDialog = value
+            if (value) {
+                sendLimitReachedNotification()
+            }
+        }
 
     // Selected/Active preset details config states for each module
     var activeSingleTapPreset by mutableStateOf(Preset(name = "Single Tap Preset", type = "single", intervalMs = 200, holdMs = 50))
@@ -65,7 +149,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     var multiTapPoints by mutableStateOf<List<TapPoint>>(emptyList())
     var activeMultiTapPreset by mutableStateOf(Preset(name = "Multi Tap Preset", type = "multi", mode = "sequential", intervalMs = 300, holdMs = 50))
 
-    // Area tap zone list
+    // Flagship Area tap zone list
     var areaTapZones by mutableStateOf<List<TapZone>>(emptyList())
     var activeAreaTapPreset by mutableStateOf(Preset(name = "Area Tap Preset", type = "area", mode = "balanced_random", intervalMs = 400, holdMs = 60))
 
@@ -85,14 +169,100 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         get() = _isAutomationActive
         set(value) {
             _isAutomationActive = value
+            if (value) {
+                resetDiagnostics()
+            }
             onAutomationActiveChanged?.invoke(value)
         }
     val executionLog = MutableStateFlow<String>("")
+    private var lastLogTime = 0L
+
+    // Live diagnostics states to track tap delivery success vs OS drops
+    var showDiagnostics by mutableStateOf(false)
+    val diagnosticAttemptedCount = MutableStateFlow<Int>(0)
+    val diagnosticDispatchedCount = MutableStateFlow<Int>(0)
+    val diagnosticDroppedCount = MutableStateFlow<Int>(0)
+    val diagnosticLatencyMs = MutableStateFlow<Long>(0L)
+    val diagnosticLastStatus = MutableStateFlow<String>("IDLE")
+    val diagnosticIsThrottled = MutableStateFlow<Boolean>(false)
+
+    fun resetDiagnostics() {
+        diagnosticAttemptedCount.value = 0
+        diagnosticDispatchedCount.value = 0
+        diagnosticDroppedCount.value = 0
+        diagnosticLatencyMs.value = 0L
+        diagnosticLastStatus.value = "RESET"
+        diagnosticIsThrottled.value = false
+    }
+
+    suspend fun performClickSuspended(x: Float, y: Float, holdDurationMs: Long): Boolean {
+        diagnosticAttemptedCount.value += 1
+        val service = NovaTapAccessibilityService.instance
+        if (service == null) {
+            diagnosticDroppedCount.value += 1
+            diagnosticLastStatus.value = "DROPPED: Service off"
+            return false
+        }
+        val startTime = System.currentTimeMillis()
+        val worked = service.clickSuspended(x, y, holdDurationMs)
+        val endTime = System.currentTimeMillis()
+        val latency = endTime - startTime
+        diagnosticLatencyMs.value = latency
+        if (worked) {
+            diagnosticDispatchedCount.value += 1
+            diagnosticLastStatus.value = "TAP at (${x.toInt()}, ${y.toInt()})"
+            // Highlight throttle if gesture dispatch response latency exceeds 150ms
+            diagnosticIsThrottled.value = latency > 150
+        } else {
+            diagnosticDroppedCount.value += 1
+            diagnosticLastStatus.value = "DROPPED by OS / busy"
+        }
+        return worked
+    }
+
+    suspend fun performSwipeSuspended(startX: Float, startY: Float, endX: Float, endY: Float, durationMs: Long): Boolean {
+        diagnosticAttemptedCount.value += 1
+        val service = NovaTapAccessibilityService.instance
+        if (service == null) {
+            diagnosticDroppedCount.value += 1
+            diagnosticLastStatus.value = "DROPPED: Service off"
+            return false
+        }
+        val startTime = System.currentTimeMillis()
+        val worked = service.swipeSuspended(startX, startY, endX, endY, durationMs)
+        val endTime = System.currentTimeMillis()
+        val latency = endTime - startTime
+        diagnosticLatencyMs.value = latency
+        if (worked) {
+            diagnosticDispatchedCount.value += 1
+            diagnosticLastStatus.value = "SWIPE (${startX.toInt()}, ${startY.toInt()}) -> (${endX.toInt()}, ${endY.toInt()})"
+            diagnosticIsThrottled.value = latency > (durationMs + 100)
+        } else {
+            diagnosticDroppedCount.value += 1
+            diagnosticLastStatus.value = "DROPPED by OS / busy"
+        }
+        return worked
+    }
+
+    fun logExecution(message: String, force: Boolean = false) {
+        val now = System.currentTimeMillis()
+        if (force || now - lastLogTime >= 400L) {
+            executionLog.value = message
+            lastLogTime = now
+        }
+    }
 
     // List of active visual tap indicators to render as transient overlays
     val visualTapEvents = MutableStateFlow<List<VisualTapEvent>>(emptyList())
+    private var lastVisualTapTime = 0L
 
     fun triggerVisualTap(x: Float, y: Float) {
+        val now = System.currentTimeMillis()
+        if (now - lastVisualTapTime < 150L) {
+            // Rate limit to at most 6.6 ripples per second to save CPU/battery and prevent main-thread choking on old devices
+            return
+        }
+        lastVisualTapTime = now
         val event = VisualTapEvent(x = x, y = y)
         val currentList = visualTapEvents.value.toMutableList()
         currentList.add(event)
@@ -164,6 +334,23 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
             selectedTheme = repository.getSettingValue("theme", "dark")
             isAdFreeUser = repository.getSettingValue("ad_free", "false").toBoolean()
             showTapRipples = repository.getSettingValue("show_ripples", "false").toBoolean()
+            showDiagnostics = repository.getSettingValue("show_diagnostics", "false").toBoolean()
+
+            // Load special task settings
+            bonusTapsLimit = repository.getSettingValue("bonus_taps_limit", "0").toLong()
+            premiumExpiresAt = repository.getSettingValue("premium_expires_at", "0").toLong()
+            val completedSet = mutableSetOf<String>()
+            for (task in promoTasks) {
+                if (repository.getSettingValue("task_completed_${task.id}", "false").toBoolean()) {
+                    completedSet.add(task.id)
+                }
+            }
+            completedTaskIds = completedSet
+            
+            // Activate Premium if temporary premium is currently running
+            if (premiumExpiresAt > System.currentTimeMillis()) {
+                isAdFreeUser = true
+            }
 
             repository.getDailyStatisticFlow().collect { daily ->
                 if (daily != null) {
@@ -357,7 +544,15 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         }
     }
 
-    // Premium status toggle
+    // Diagnostics HUD Toggle
+    fun toggleDiagnostics(enabled: Boolean) {
+        showDiagnostics = enabled
+        viewModelScope.launch {
+            repository.saveSetting("show_diagnostics", enabled.toString())
+        }
+    }
+
+    // Remove Ads Subscription
     fun removeAdsService() {
         isAdFreeUser = true
         viewModelScope.launch {
@@ -365,17 +560,437 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         }
     }
 
-    // Reward action bonus trigger
-    fun rewardUserByAd() {
+    fun triggerPremiumPurchase(activity: android.app.Activity) {
+        val launcher = onTriggerPurchase
+        if (launcher != null) {
+            launcher(activity)
+        } else {
+            // Fallback
+            removeAdsService()
+        }
+    }
+
+    fun setPremiumUnlocked(unlocked: Boolean) {
+        isAdFreeUser = unlocked
         viewModelScope.launch {
-            _adRewardedAdditionalActions.value += 50000
+            repository.saveSetting("ad_free", unlocked.toString())
+        }
+    }
+
+    fun checkPremiumStatus() {
+        viewModelScope.launch {
+            val permPremium = repository.getSettingValue("ad_free", "false").toBoolean()
+            val tempPremiumExpires = repository.getSettingValue("premium_expires_at", "0").toLong()
+            premiumExpiresAt = tempPremiumExpires
+            isAdFreeUser = permPremium || (tempPremiumExpires > System.currentTimeMillis())
+        }
+    }
+
+    fun isAppInstalled(packageName: String): Boolean {
+        return try {
+            val context = getApplication<Application>()
+            context.packageManager.getPackageInfo(packageName, 0)
+            true
+        } catch (e: Exception) {
+            false
+        }
+    }
+
+    fun claimTaskReward(task: PromoTask, context: android.content.Context) {
+        if (completedTaskIds.contains(task.id)) {
+            val msg = if (selectedLanguage == "ru") "Награда уже получена!" else "Reward already claimed!"
+            Toast.makeText(context, msg, Toast.LENGTH_SHORT).show()
+            return
+        }
+
+        if (task.targetPackage != null) {
+            val installed = isAppInstalled(task.targetPackage)
+            if (!installed) {
+                val errorMsg = if (selectedLanguage == "ru") {
+                    "Приложение еще не установлено. Пожалуйста, установите его из Play Store."
+                } else {
+                    "The app is not installed yet. Please install it from the Play Store."
+                }
+                Toast.makeText(context, errorMsg, Toast.LENGTH_LONG).show()
+                return
+            }
+        }
+
+        viewModelScope.launch {
+            repository.saveSetting("task_completed_${task.id}", "true")
+            completedTaskIds = completedTaskIds + task.id
+
+            if (task.rewardTaps > 0) {
+                val newBonus = bonusTapsLimit + task.rewardTaps
+                repository.saveSetting("bonus_taps_limit", newBonus.toString())
+                bonusTapsLimit = newBonus
+            }
+
+            if (task.rewardPremiumDays > 0) {
+                val currentExpires = repository.getSettingValue("premium_expires_at", "0").toLong()
+                val now = System.currentTimeMillis()
+                val baseTime = if (currentExpires > now) currentExpires else now
+                val addedMs = task.rewardPremiumDays * 24L * 60L * 60L * 1000L
+                val newExpires = baseTime + addedMs
+                repository.saveSetting("premium_expires_at", newExpires.toString())
+                premiumExpiresAt = newExpires
+                isAdFreeUser = true
+            }
+
+            val successMsg = if (selectedLanguage == "ru") {
+                "Успешно! Награда получена. Спасибо за поддержку!"
+            } else {
+                "Success! Reward claimed. Thank you for your support!"
+            }
+            Toast.makeText(context, successMsg, Toast.LENGTH_LONG).show()
+            checkPremiumStatus()
+        }
+    }
+
+    fun sendLimitReachedNotification() {
+        val context = getApplication<Application>()
+        val channelId = "limit_notification"
+        val channelName = if (selectedLanguage == "ru") "Уведомления о лимите" else "Limit Notifications"
+        val notificationId = 1001
+
+        val notificationManager = context.getSystemService(Context.NOTIFICATION_SERVICE) as? NotificationManager
+        if (notificationManager == null) return
+
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            val importance = NotificationManager.IMPORTANCE_HIGH
+            val channel = NotificationChannel(channelId, channelName, importance).apply {
+                description = if (selectedLanguage == "ru") "Уведомления о превышении дневного лимита действий" else "Notifications when daily actions limit is exceeded"
+                enableVibration(true)
+            }
+            notificationManager.createNotificationChannel(channel)
+        }
+
+        // Create intent to launch MainActivity
+        val intent = Intent(context, com.novaboost.novatap.MainActivity::class.java).apply {
+            flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
+        }
+        val pendingIntent = PendingIntent.getActivity(
+            context,
+            0,
+            intent,
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+                PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+            } else {
+                PendingIntent.FLAG_UPDATE_CURRENT
+            }
+        )
+
+        val title = if (selectedLanguage == "ru") {
+            "Дневной лимит тапов исчерпан! 🚀"
+        } else {
+            "Daily click limit reached! 🚀"
+        }
+
+        val contentText = if (selectedLanguage == "ru") {
+            "Хотите продолжить? Уберите рекламу и лимиты всего за \$0.99 подпиской! Это даст 100% обход детекции (Stealth mode) и снижение нагрузки на 40%!"
+        } else {
+            "Want to continue? Remove ads and limits for just \$0.99! Get 100% detection bypass (Stealth mode) & 40% CPU load reduction!"
+        }
+
+        val builder = NotificationCompat.Builder(context, channelId)
+            .setSmallIcon(android.R.drawable.ic_dialog_info)
+            .setContentTitle(title)
+            .setContentText(contentText)
+            .setStyle(NotificationCompat.BigTextStyle().bigText(contentText))
+            .setPriority(NotificationCompat.PRIORITY_HIGH)
+            .setContentIntent(pendingIntent)
+            .setAutoCancel(true)
+
+        var isPermissionGranted = true
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            isPermissionGranted = ContextCompat.checkSelfPermission(
+                context,
+                android.Manifest.permission.POST_NOTIFICATIONS
+            ) == android.content.pm.PackageManager.PERMISSION_GRANTED
+        }
+
+        if (isPermissionGranted) {
+            try {
+                notificationManager.notify(notificationId, builder.build())
+            } catch (e: Exception) {
+                e.printStackTrace()
+                logException(e, "SendNotification")
+            }
+        }
+    }
+
+    // Simulated Ad States
+    var showSimulatedAd by mutableStateOf(false)
+    var adType by mutableStateOf("rewarded") // "rewarded" or "short"
+    var adCountdownSeconds by mutableStateOf(30)
+    var isAdSkippable by mutableStateOf(false)
+    var resetStatsAfterAd by mutableStateOf(false)
+    private var adTimerJob: kotlinx.coroutines.Job? = null
+
+    // Real AdMob Objects
+    private var mInterstitialAd: com.google.android.gms.ads.interstitial.InterstitialAd? = null
+    private var isInterstitialAdLoading = false
+    private var mRewardedAd: com.google.android.gms.ads.rewarded.RewardedAd? = null
+    private var isRewardedAdLoading = false
+
+    private var simulatedAdOnRewarded: (() -> Unit)? = null
+    private var simulatedAdOnDismiss: (() -> Unit)? = null
+
+    // Reward Ad Watch Limits: Max 3 watches in 15 minutes
+    private val rewardAdWatchTimestamps = mutableListOf<Long>()
+    private var lastShortAdShowTime = 0L
+
+    fun loadInterstitialAd(context: Context) {
+        if (isAdFreeUser) return
+        if (mInterstitialAd != null || isInterstitialAdLoading) return
+
+        isInterstitialAdLoading = true
+        val adRequest = com.google.android.gms.ads.AdRequest.Builder().build()
+        com.google.android.gms.ads.interstitial.InterstitialAd.load(
+            context,
+            "ca-app-pub-4796438938442217/8794381782",
+            adRequest,
+            object : com.google.android.gms.ads.interstitial.InterstitialAdLoadCallback() {
+                override fun onAdFailedToLoad(adError: com.google.android.gms.ads.LoadAdError) {
+                    mInterstitialAd = null
+                    isInterstitialAdLoading = false
+                }
+
+                override fun onAdLoaded(interstitialAd: com.google.android.gms.ads.interstitial.InterstitialAd) {
+                    mInterstitialAd = interstitialAd
+                    isInterstitialAdLoading = false
+                }
+            }
+        )
+    }
+
+    fun loadRewardedAd(context: Context) {
+        if (isAdFreeUser) return
+        if (mRewardedAd != null || isRewardedAdLoading) return
+
+        isRewardedAdLoading = true
+        val adRequest = com.google.android.gms.ads.AdRequest.Builder().build()
+        com.google.android.gms.ads.rewarded.RewardedAd.load(
+            context,
+            "ca-app-pub-4796438938442217/7746426360",
+            adRequest,
+            object : com.google.android.gms.ads.rewarded.RewardedAdLoadCallback() {
+                override fun onAdFailedToLoad(adError: com.google.android.gms.ads.LoadAdError) {
+                    mRewardedAd = null
+                    isRewardedAdLoading = false
+                }
+
+                override fun onAdLoaded(rewardedAd: com.google.android.gms.ads.rewarded.RewardedAd) {
+                    mRewardedAd = rewardedAd
+                    isRewardedAdLoading = false
+                }
+            }
+        )
+    }
+
+    fun showInterstitialAd(context: Context, onDismiss: () -> Unit) {
+        if (isAdFreeUser) {
+            onDismiss()
+            return
+        }
+
+        val activity = context.findActivity()
+        if (activity == null) {
+            onDismiss()
+            return
+        }
+
+        val ad = mInterstitialAd
+        if (ad != null) {
+            ad.fullScreenContentCallback = object : com.google.android.gms.ads.FullScreenContentCallback() {
+                override fun onAdDismissedFullScreenContent() {
+                    mInterstitialAd = null
+                    loadInterstitialAd(context)
+                    onDismiss()
+                }
+
+                override fun onAdFailedToShowFullScreenContent(adError: com.google.android.gms.ads.AdError) {
+                    mInterstitialAd = null
+                    loadInterstitialAd(context)
+                    onDismiss()
+                }
+            }
+            ad.show(activity)
+        } else {
+            loadInterstitialAd(context)
+            onDismiss()
+        }
+    }
+
+    fun showRewardedAd(context: Context, onRewarded: () -> Unit, onDismiss: () -> Unit) {
+        if (isAdFreeUser) {
+            onRewarded()
+            onDismiss()
+            return
+        }
+
+        val activity = context.findActivity()
+        if (activity == null) {
+            startSimulatedAdWithCallback(onRewarded, onDismiss)
+            return
+        }
+
+        val ad = mRewardedAd
+        if (ad != null) {
+            var earned = false
+            ad.fullScreenContentCallback = object : com.google.android.gms.ads.FullScreenContentCallback() {
+                override fun onAdDismissedFullScreenContent() {
+                    mRewardedAd = null
+                    loadRewardedAd(context)
+                    if (earned) {
+                        onRewarded()
+                    }
+                    onDismiss()
+                }
+
+                override fun onAdFailedToShowFullScreenContent(adError: com.google.android.gms.ads.AdError) {
+                    mRewardedAd = null
+                    loadRewardedAd(context)
+                    startSimulatedAdWithCallback(onRewarded, onDismiss)
+                }
+            }
+            ad.show(activity) {
+                earned = true
+            }
+        } else {
+            loadRewardedAd(context)
+            startSimulatedAdWithCallback(onRewarded, onDismiss)
+        }
+    }
+
+    fun startSimulatedAdWithCallback(onRewarded: () -> Unit, onDismiss: () -> Unit) {
+        simulatedAdOnRewarded = onRewarded
+        simulatedAdOnDismiss = onDismiss
+        startSimulatedAd("rewarded")
+    }
+
+    fun canWatchRewardAd(): Boolean {
+        val now = System.currentTimeMillis()
+        rewardAdWatchTimestamps.removeAll { now - it > 15 * 60 * 1000 }
+        return rewardAdWatchTimestamps.size < 3
+    }
+
+    fun getMinutesUntilNextRewardAd(): Int {
+        val now = System.currentTimeMillis()
+        rewardAdWatchTimestamps.removeAll { now - it > 15 * 60 * 1000 }
+        if (rewardAdWatchTimestamps.size < 3) return 0
+        val oldest = rewardAdWatchTimestamps.firstOrNull() ?: return 0
+        val diffMs = (15 * 60 * 1000) - (now - oldest)
+        return (diffMs / 60000).toInt().coerceAtLeast(1)
+    }
+
+    fun startSimulatedAd(type: String) {
+        if (isAdFreeUser) return
+
+        if (type == "rewarded" && !canWatchRewardAd()) {
+            return
+        }
+
+        adTimerJob?.cancel()
+        adType = type
+        showSimulatedAd = true
+        adCountdownSeconds = if (type == "rewarded") 30 else 5
+        isAdSkippable = type == "short"
+
+        adTimerJob = viewModelScope.launch {
+            while (adCountdownSeconds > 0) {
+                kotlinx.coroutines.delay(1000)
+                adCountdownSeconds--
+            }
+            if (type == "rewarded") {
+                rewardAdWatchTimestamps.add(System.currentTimeMillis())
+                if (resetStatsAfterAd) {
+                    resetStats()
+                    resetStatsAfterAd = false
+                    executionLog.value = "Watched Reward Ad. Daily counters reset successful!"
+                } else {
+                    val onRewarded = simulatedAdOnRewarded
+                    if (onRewarded != null) {
+                        onRewarded()
+                        simulatedAdOnRewarded = null
+                    } else {
+                        _adRewardedAdditionalActions.value += 10000
+                        executionLog.value = "Watched Reward Ad. Limits extended by +10,000 actions."
+                    }
+                }
+                val onDismiss = simulatedAdOnDismiss
+                if (onDismiss != null) {
+                    onDismiss()
+                    simulatedAdOnDismiss = null
+                }
+            }
+            showSimulatedAd = false
+        }
+    }
+
+    fun watchAdToResetStats(context: Context) {
+        if (canWatchRewardAd()) {
+            resetStatsAfterAd = true
+            showRewardedAd(
+                context = context,
+                onRewarded = {
+                    resetStats()
+                    executionLog.value = "Watched Ad. Daily counters reset successful!"
+                },
+                onDismiss = {}
+            )
+        } else {
+            val mins = getMinutesUntilNextRewardAd()
+            val text = if (selectedLanguage == "ru") {
+                "Вы можете посмотреть максимум 3 рекламы за 15 минут. Подождите еще $mins мин. или купите подписку за \$0.99!"
+            } else {
+                "You can watch at most 3 ads per 15 minutes. Wait $mins min or remove ads for \$0.99!"
+            }
+            Toast.makeText(context, text, Toast.LENGTH_LONG).show()
+        }
+    }
+
+    fun skipOrCloseSimulatedAd() {
+        if (adType == "short" || adCountdownSeconds <= 0) {
+            adTimerJob?.cancel()
+            showSimulatedAd = false
+        }
+    }
+
+    fun triggerShortAdOnResume(context: Context) {
+        if (isAdFreeUser) return
+        val now = System.currentTimeMillis()
+        if (now - lastShortAdShowTime > 45 * 1000) {
+            lastShortAdShowTime = now
+            showInterstitialAd(context) {}
+        }
+    }
+
+    // Watch Ad triggers +10,000 actions (with real AdMob and simulation fallback)
+    fun rewardUserByAd(context: Context) {
+        if (canWatchRewardAd()) {
             displayLimitDialog = false
-            executionLog.value = "Watched Reward Ad. Limits extended by +50,000 actions."
+            showRewardedAd(
+                context = context,
+                onRewarded = {
+                    _adRewardedAdditionalActions.value += 10000
+                    executionLog.value = "Watched Reward Ad. Limits extended by +10,000 actions."
+                },
+                onDismiss = {}
+            )
+        } else {
+            val mins = getMinutesUntilNextRewardAd()
+            val text = if (selectedLanguage == "ru") {
+                "Вы можете посмотреть максимум 3 рекламы за 15 минут. Подождите еще $mins мин. или купите подписку за \$0.99!"
+            } else {
+                "You can watch at most 3 ads per 15 minutes. Wait $mins min or remove ads for \$0.99!"
+            }
+            Toast.makeText(context, text, Toast.LENGTH_LONG).show()
         }
     }
 
     fun getActionsLimit(): Long {
-        return if (isAdFreeUser) Long.MAX_VALUE else (50000 + _adRewardedAdditionalActions.value)
+        return if (isAdFreeUser) Long.MAX_VALUE else (50000 + _adRewardedAdditionalActions.value + bonusTapsLimit)
     }
 
     fun getRemainingActions(): Long {
@@ -628,25 +1243,16 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
 
     // Stop Automation
     fun stopAutomation() {
-        if (!isAutomationActive && automationJob == null) {
-            executionLog.value = "Automation is already stopped."
-            return
-        }
-
         isAutomationActive = false
-        try {
-            automationJob?.cancel()
-        } catch (e: Exception) {
-            logException(e, "stopAutomation")
-        }
+        automationJob?.cancel()
         automationJob = null
         executionLog.value = "Automation session stopped."
     }
 
     // Trigger Tap automation sequence
     fun startSingleTapAutomation() {
-        stopAutomation()
         if (isAutomationActive) {
+            stopAutomation()
             return
         }
 
@@ -719,21 +1325,20 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
                 }
 
                 // Clamp values and dispatch click! Use 10ms minimum hold time for hyper-speed performance.
-                val service = NovaTapAccessibilityService.instance
-                val worked = service?.click(finalX, finalY, currentHold.coerceAtLeast(10)) ?: false
+                val worked = performClickSuspended(finalX, finalY, currentHold.coerceAtLeast(10))
                 triggerVisualTap(finalX, finalY)
 
                 if (worked) {
-                    executionLog.value = "[Real Access] Tap dispatched at ($finalX, $finalY)"
+                    logExecution("[Real Access] Tap dispatched at ($finalX, $finalY)")
                 } else {
-                    executionLog.value = "[Simulated Sandbox] Click pulsed at ($finalX, $finalY)"
+                    logExecution("[Simulated Sandbox] Click pulsed at ($finalX, $finalY)")
                 }
 
                 repository.incrementActions("tap", 1)
                 counter++
 
                 if (config.stopConditionType == "clicks" && config.repeatCount > 0 && counter >= config.repeatCount) {
-                    executionLog.value = "Finished desired repeats limits ($counter)."
+                    logExecution("Finished desired repeats limits ($counter).", force = true)
                     isAutomationActive = false
                     break
                 }
@@ -745,8 +1350,8 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
 
     // Trigger Multi-Tap automation sequence
     fun startMultiTapAutomation() {
-        stopAutomation()
         if (isAutomationActive) {
+            stopAutomation()
             return
         }
 
@@ -770,7 +1375,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         automationJob = viewModelScope.launch {
             var counter = 0
             var currentIndex = 0
-            while (isAutomationActive && isRunningAndNotEmpty(multiTapPoints)) {
+            while (isRunningAndNotEmpty(multiTapPoints)) {
                 if (getRemainingActions() <= 0) {
                     isAutomationActive = false
                     displayLimitDialog = true
@@ -820,21 +1425,20 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
                     }
                 }
 
-                val service = NovaTapAccessibilityService.instance
-                val worked = service?.click(finalX, finalY, finalHold.coerceAtLeast(10)) ?: false
+                val worked = performClickSuspended(finalX, finalY, finalHold.coerceAtLeast(10))
                 triggerVisualTap(finalX, finalY)
 
                 if (worked) {
-                    executionLog.value = "[Real Access] Node $selectionIndex clicked ($finalX, $finalY)"
+                    logExecution("[Real Access] Node $selectionIndex clicked ($finalX, $finalY)")
                 } else {
-                    executionLog.value = "[Sim Sandbox] Node $selectionIndex pulse ($finalX, $finalY)"
+                    logExecution("[Sim Sandbox] Node $selectionIndex pulse ($finalX, $finalY)")
                 }
 
                 repository.incrementActions("tap", 1)
                 counter++
 
                 if (config.stopConditionType == "clicks" && config.repeatCount > 0 && counter >= config.repeatCount && config.mode != "loop") {
-                    executionLog.value = "Multi Tap loop completed."
+                    logExecution("Multi Tap loop completed.", force = true)
                     isAutomationActive = false
                     break
                 }
@@ -850,10 +1454,10 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         return isAutomationActive && list.isNotEmpty()
     }
 
-    // Area tap engine with allowed and blocked zones.
+    // Flagship Area Tap engine! Includes allowed and blocked zones.
     fun startAreaTapAutomation() {
-        stopAutomation()
         if (isAutomationActive) {
+            stopAutomation()
             return
         }
 
@@ -864,7 +1468,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
 
         val config = activeAreaTapPreset
         isAutomationActive = true
-        executionLog.value = "Area tap loop is running..."
+        executionLog.value = "Flagship Area Tap Loop running stochastic engine..."
 
         val stopDurationMs = when (config.stopDurationUnit) {
             "seconds" -> config.stopDurationAmount * 1000L
@@ -993,24 +1597,23 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
                 }
 
                 if (foundTarget) {
-                    val service = NovaTapAccessibilityService.instance
-                    val worked = service?.click(finalX, finalY, config.holdMs.coerceAtLeast(10)) ?: false
+                    val worked = performClickSuspended(finalX, finalY, config.holdMs.coerceAtLeast(10))
                     triggerVisualTap(finalX, finalY)
 
                     if (worked) {
-                        executionLog.value = "[Real Zone] Clicked inside zone on safely cleared Target ($finalX, $finalY)."
+                        logExecution("[Real Zone] Clicked inside zone on safely cleared Target ($finalX, $finalY).")
                     } else {
-                        executionLog.value = "[Sim Zone] stochastic pulse inside Allowed spot ($finalX, $finalY)."
+                        logExecution("[Sim Zone] stochastic pulse inside Allowed spot ($finalX, $finalY).")
                     }
 
                     repository.incrementActions("tap", 1)
                     counter++
                 } else {
-                    executionLog.value = "[Safety Warning] No safe target path found. Blocked by overlapping Red Zones!"
+                    logExecution("[Safety Warning] No safe target path found. Blocked by overlapping Red Zones!", force = true)
                 }
 
                 if (config.stopConditionType == "clicks" && config.repeatCount > 0 && counter >= config.repeatCount) {
-                    executionLog.value = "Finished desired repeats."
+                    logExecution("Finished desired repeats.", force = true)
                     isAutomationActive = false
                     break
                 }
@@ -1022,8 +1625,8 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
 
     // Trigger Swipe gesture automation sequence
     fun startSwipeAutomation() {
-        stopAutomation()
         if (isAutomationActive) {
+            stopAutomation()
             return
         }
 
@@ -1076,20 +1679,19 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
                     }
                 }
 
-                val service = NovaTapAccessibilityService.instance
-                val worked = service?.swipe(sx, sy, ex, ey, config.holdMs.coerceAtLeast(10)) ?: false
+                val worked = performSwipeSuspended(sx, sy, ex, ey, config.holdMs.coerceAtLeast(10))
 
                 if (worked) {
-                    executionLog.value = "[Real Swipe] Dispatched ($sx, $sy) -> ($ex, $ey)"
+                    logExecution("[Real Swipe] Dispatched ($sx, $sy) -> ($ex, $ey)")
                 } else {
-                    executionLog.value = "[Sim Swipe] Drag outline drawn from ($sx, $sy) to ($ex, $ey)"
+                    logExecution("[Sim Swipe] Drag outline drawn from ($sx, $sy) to ($ex, $ey)")
                 }
 
                 repository.incrementActions("swipe", 1)
                 counter++
 
                 if (config.stopConditionType == "clicks" && config.repeatCount > 0 && counter >= config.repeatCount) {
-                    executionLog.value = "Finished swipes sequence."
+                    logExecution("Finished swipes sequence.", force = true)
                     isAutomationActive = false
                     break
                 }
@@ -1132,12 +1734,12 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
 
                     when (step.type) {
                         "tap" -> {
-                            val worked = service?.click(step.x, step.y, 50) ?: false
+                            val worked = performClickSuspended(step.x, step.y, 50)
                             triggerVisualTap(step.x, step.y)
                             if (worked) {
-                                executionLog.value = "[Real Scenario] Step Tap Clicked Coordinate (${step.x}, ${step.y})"
+                                logExecution("[Real Scenario] Step Tap Clicked Coordinate (${step.x}, ${step.y})")
                             } else {
-                                executionLog.value = "[Sim Scenario] Step Tap pulsed coordinate (${step.x}, ${step.y})"
+                                logExecution("[Sim Scenario] Step Tap pulsed coordinate (${step.x}, ${step.y})")
                             }
                             repository.incrementActions("scenario", 1)
                         }
@@ -1147,24 +1749,24 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
                             if (allowedZone != null) {
                                 val rx = allowedZone.x + Random.nextInt(-30, 30)
                                 val ry = allowedZone.y + Random.nextInt(-30, 30)
-                                val worked = service?.click(rx, ry, 50) ?: false
+                                val worked = performClickSuspended(rx, ry, 50)
                                 triggerVisualTap(rx, ry)
                                 if (worked) {
-                                    executionLog.value = "[Real Scenario] Step Area clicked inside allowed space ($rx, $ry)"
+                                    logExecution("[Real Scenario] Step Area clicked inside allowed space ($rx, $ry)")
                                 } else {
-                                    executionLog.value = "[Sim Scenario] Step Area pulsed inside allowed space ($rx, $ry)"
+                                    logExecution("[Sim Scenario] Step Area pulsed inside allowed space ($rx, $ry)")
                                 }
                                 repository.incrementActions("scenario", 1)
                             } else {
-                                executionLog.value = "Skip Area step: No area zones configured in dashboard"
+                                logExecution("Skip Area step: No area zones configured in dashboard", force = true)
                             }
                         }
                         "swipe" -> {
-                            val worked = service?.swipe(100f, 800f, 800f, 100f, 350) ?: false
+                            val worked = performSwipeSuspended(100f, 800f, 800f, 100f, 350)
                             if (worked) {
-                                executionLog.value = "[Real Scenario] Step Swipe executed."
+                                logExecution("[Real Scenario] Step Swipe executed.")
                             } else {
-                                executionLog.value = "[Sim Scenario] Step Swipe emulated."
+                                logExecution("[Sim Scenario] Step Swipe emulated.")
                             }
                             repository.incrementActions("scenario", 1)
                         }
@@ -1172,7 +1774,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
                             delay(step.durationMs.coerceAtLeast(10))
                         }
                         "loop" -> {
-                            executionLog.value = "Scenario looping back."
+                            logExecution("Scenario looping back.", force = true)
                             // Simple continue is loop behavior
                         }
                     }

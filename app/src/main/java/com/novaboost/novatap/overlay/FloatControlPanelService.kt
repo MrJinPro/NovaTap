@@ -5,9 +5,7 @@ import android.content.Context
 import android.content.Intent
 import android.graphics.PixelFormat
 import android.os.Build
-import android.os.Handler
 import android.os.IBinder
-import android.os.Looper
 import android.view.Gravity
 import android.view.View
 import android.view.WindowManager
@@ -15,6 +13,7 @@ import android.widget.Toast
 import androidx.compose.animation.*
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Canvas
+import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -80,15 +79,6 @@ class FloatControlPanelService : Service() {
 
     private var snapToGrid = false
 
-    private val overlayRefreshHandler = Handler(Looper.getMainLooper())
-    private val overlayRefreshRunnable = Runnable {
-        try {
-            recreateOverlayWindows()
-        } catch (e: Exception) {
-            e.printStackTrace()
-        }
-    }
-
     private val serviceLifecycleOwner = MyServiceLifecycleOwner()
     private val serviceViewModelStoreOwner = object : ViewModelStoreOwner {
         override val viewModelStore: ViewModelStore = ViewModelStore()
@@ -120,9 +110,9 @@ class FloatControlPanelService : Service() {
         MainViewModel.instance?.isOverlayWorkspaceActive = true
 
         MainViewModel.instance?.onAutomationActiveChanged = { active ->
-            overlayRefreshHandler.post {
+            android.os.Handler(android.os.Looper.getMainLooper()).post {
                 isWorkspacePlaying = active
-                scheduleOverlayRefresh(80)
+                recreateOverlayWindows()
             }
         }
     }
@@ -131,18 +121,13 @@ class FloatControlPanelService : Service() {
         intent?.getStringExtra("mode")?.let {
             currentMode = it
         }
-        scheduleOverlayRefresh(80)
+        recreateOverlayWindows()
         return START_STICKY
     }
 
     private fun dpToPx(dp: Float): Int {
         val density = resources.displayMetrics.density
         return (dp * density).roundToInt()
-    }
-
-    private fun scheduleOverlayRefresh(delayMs: Long = 120L) {
-        overlayRefreshHandler.removeCallbacks(overlayRefreshRunnable)
-        overlayRefreshHandler.postDelayed(overlayRefreshRunnable, delayMs)
     }
 
     private fun createComposeView(content: @Composable () -> Unit): ComposeView {
@@ -154,7 +139,13 @@ class FloatControlPanelService : Service() {
             setViewTreeViewModelStoreOwner(serviceViewModelStoreOwner)
 
             setContent {
-                NovaTapTheme {
+                val themeMode = MainViewModel.instance?.selectedTheme ?: "dark"
+                val isDarkTheme = when (themeMode) {
+                    "dark" -> true
+                    "light" -> false
+                    else -> isSystemInDarkTheme()
+                }
+                NovaTapTheme(darkTheme = isDarkTheme) {
                     content()
                 }
             }
@@ -245,9 +236,8 @@ class FloatControlPanelService : Service() {
                     isRu = viewModel.selectedLanguage == "ru",
                     isPlaying = isWorkspacePlaying,
                     onTogglePlay = {
-                        val shouldStart = !viewModel.isAutomationActive
-                        if (shouldStart) {
-                            isWorkspacePlaying = true
+                        isWorkspacePlaying = !isWorkspacePlaying
+                        if (isWorkspacePlaying) {
                             when (currentMode) {
                                 "single" -> viewModel.startSingleTapAutomation()
                                 "multi" -> viewModel.startMultiTapAutomation()
@@ -255,10 +245,9 @@ class FloatControlPanelService : Service() {
                                 "swipe" -> viewModel.startSwipeAutomation()
                             }
                         } else {
-                            isWorkspacePlaying = false
                             viewModel.stopAutomation()
                         }
-                        scheduleOverlayRefresh(120)
+                        recreateOverlayWindows()
                     },
                     isExpanded = isExpanded,
                     onToggleExpand = {
@@ -304,6 +293,9 @@ class FloatControlPanelService : Service() {
                     onAddAreaZone = {
                         viewModel.addAreaTapZone(isAllowed = true, isRect = true, x = 450f, y = 700f)
                         recreateOverlayWindows()
+                    },
+                    onToggleDiagnostics = {
+                        recreateOverlayWindows()
                     }
                 )
             }
@@ -330,8 +322,8 @@ class FloatControlPanelService : Service() {
                 }
             }
 
-            // 3. Add Full-Screen Tap Visualizer Overlay (ONLY if enabled in settings to prevent clickjacking protection blocks)
-            if (viewModel.showTapRipples) {
+            // 3. Add Full-Screen Tap Visualizer Overlay (ONLY if enabled in settings or diagnostics is enabled to prevent clickjacking protection blocks)
+            if (viewModel.showTapRipples || viewModel.showDiagnostics) {
                 val visualizerParams = WindowManager.LayoutParams(
                     WindowManager.LayoutParams.MATCH_PARENT,
                     WindowManager.LayoutParams.MATCH_PARENT,
@@ -837,11 +829,12 @@ fun CompactControlPanelCard(
     snapToGrid: Boolean,
     onToggleSnap: (Boolean) -> Unit,
     onAddMultiPoint: () -> Unit = {},
-    onAddAreaZone: () -> Unit = {}
+    onAddAreaZone: () -> Unit = {},
+    onToggleDiagnostics: () -> Unit = {}
 ) {
     Card(
         modifier = Modifier
-            .width(72.dp),
+            .width(56.dp),
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface.copy(alpha = 0.94f)),
         shape = RoundedCornerShape(28.dp),
         border = BorderStroke(1.5.dp, MaterialTheme.colorScheme.primary.copy(alpha = 0.4f)),
@@ -887,8 +880,8 @@ fun CompactControlPanelCard(
                 modifier = Modifier.size(48.dp)
             ) {
                 Icon(
-                    imageVector = if (isPlaying) Icons.Default.Stop else Icons.Default.PlayArrow,
-                    contentDescription = if (isPlaying) "Stop automation" else "Start automation",
+                    imageVector = if (isPlaying) Icons.Default.Pause else Icons.Default.PlayArrow,
+                    contentDescription = if (isPlaying) "Pause" else "Play",
                     tint = Color.White,
                     modifier = Modifier.size(24.dp)
                 )
@@ -902,7 +895,7 @@ fun CompactControlPanelCard(
                 colors = IconButtonDefaults.iconButtonColors(
                     containerColor = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.4f)
                 ),
-                modifier = Modifier.size(34.dp)
+                modifier = Modifier.size(48.dp)
             ) {
                 Icon(
                     imageVector = if (isExpanded) Icons.Default.KeyboardArrowUp else Icons.Default.KeyboardArrowDown,
@@ -924,7 +917,7 @@ fun CompactControlPanelCard(
                     colors = IconButtonDefaults.iconButtonColors(
                         containerColor = MaterialTheme.colorScheme.secondaryContainer
                     ),
-                    modifier = Modifier.size(36.dp)
+                    modifier = Modifier.size(48.dp)
                 ) {
                     Icon(
                         imageVector = Icons.Default.Settings,
@@ -942,7 +935,7 @@ fun CompactControlPanelCard(
                     colors = IconButtonDefaults.iconButtonColors(
                         containerColor = MaterialTheme.colorScheme.errorContainer.copy(alpha = 0.8f)
                     ),
-                    modifier = Modifier.size(36.dp)
+                    modifier = Modifier.size(48.dp)
                 ) {
                     Icon(
                         imageVector = Icons.Default.Close,
@@ -960,12 +953,33 @@ fun CompactControlPanelCard(
                     colors = IconButtonDefaults.iconButtonColors(
                         containerColor = if (snapToGrid) MaterialTheme.colorScheme.primaryContainer else Color.Transparent
                     ),
-                    modifier = Modifier.size(36.dp)
+                    modifier = Modifier.size(48.dp)
                 ) {
                     Icon(
                         imageVector = Icons.Default.GridOn,
                         contentDescription = "Snap Grid",
                         tint = if (snapToGrid) MaterialTheme.colorScheme.onPrimaryContainer else MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f),
+                        modifier = Modifier.size(18.dp)
+                    )
+                }
+
+                Spacer(modifier = Modifier.height(6.dp))
+
+                // Diagnostic Toggle Button
+                IconButton(
+                    onClick = {
+                        viewModel.showDiagnostics = !viewModel.showDiagnostics
+                        onToggleDiagnostics()
+                    },
+                    colors = IconButtonDefaults.iconButtonColors(
+                        containerColor = if (viewModel.showDiagnostics) MaterialTheme.colorScheme.primaryContainer else Color.Transparent
+                    ),
+                    modifier = Modifier.size(48.dp)
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.BugReport,
+                        contentDescription = "Toggle Diagnostics",
+                        tint = if (viewModel.showDiagnostics) MaterialTheme.colorScheme.onPrimaryContainer else MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f),
                         modifier = Modifier.size(18.dp)
                     )
                 }
@@ -979,7 +993,7 @@ fun CompactControlPanelCard(
                             colors = IconButtonDefaults.iconButtonColors(
                                 containerColor = MaterialTheme.colorScheme.primaryContainer
                             ),
-                            modifier = Modifier.size(36.dp)
+                            modifier = Modifier.size(48.dp)
                         ) {
                             Icon(
                                 imageVector = Icons.Default.AddLocation,
@@ -997,7 +1011,7 @@ fun CompactControlPanelCard(
                             colors = IconButtonDefaults.iconButtonColors(
                                 containerColor = MaterialTheme.colorScheme.primaryContainer
                             ),
-                            modifier = Modifier.size(36.dp)
+                            modifier = Modifier.size(48.dp)
                         ) {
                             Icon(
                                 imageVector = Icons.Default.AcUnit,
@@ -1334,6 +1348,246 @@ fun TapVisualizerOverlay(viewModel: MainViewModel) {
         events.forEach { event ->
             key(event.id) {
                 TapRippleEffect(x = event.x, y = event.y)
+            }
+        }
+
+        if (viewModel.showDiagnostics) {
+            val attempted by viewModel.diagnosticAttemptedCount.collectAsState()
+            val dispatched by viewModel.diagnosticDispatchedCount.collectAsState()
+            val dropped by viewModel.diagnosticDroppedCount.collectAsState()
+            val latency by viewModel.diagnosticLatencyMs.collectAsState()
+            val lastStatus by viewModel.diagnosticLastStatus.collectAsState()
+            val isThrottled by viewModel.diagnosticIsThrottled.collectAsState()
+
+            val serviceActive = com.novaboost.novatap.accessibility.NovaTapAccessibilityService.instance != null
+            val successRate = if (attempted > 0) (dispatched.toFloat() / attempted * 100).toInt() else 100
+
+            Card(
+                modifier = Modifier
+                    .align(Alignment.TopCenter)
+                    .padding(top = 80.dp)
+                    .width(300.dp),
+                colors = CardDefaults.cardColors(containerColor = Color(0xF20F172A)), // Deep premium slate-900 (95% opaque)
+                shape = RoundedCornerShape(16.dp),
+                border = BorderStroke(1.dp, Color(0x2694A3B8)) // 15% opacity slate border
+            ) {
+                Column(
+                    modifier = Modifier.padding(12.dp)
+                ) {
+                    // Title Bar
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Icon(
+                                imageVector = Icons.Default.Speed,
+                                contentDescription = "Diagnostics Icon",
+                                tint = Color(0xFF60A5FA),
+                                modifier = Modifier.size(16.dp)
+                            )
+                            Spacer(modifier = Modifier.width(6.dp))
+                            Text(
+                                text = "TAP DIAGNOSTICS",
+                                fontSize = 11.sp,
+                                fontWeight = FontWeight.Bold,
+                                color = Color(0xFF94A3B8)
+                            )
+                        }
+                        
+                        // Live pulsing indicator
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Box(
+                                modifier = Modifier
+                                    .size(6.dp)
+                                    .background(Color(0xFF10B981), CircleShape)
+                            )
+                            Spacer(modifier = Modifier.width(4.dp))
+                            Text(
+                                text = "LIVE",
+                                fontSize = 9.sp,
+                                fontWeight = FontWeight.SemiBold,
+                                color = Color(0xFF10B981)
+                            )
+                        }
+                    }
+
+                    Spacer(modifier = Modifier.height(10.dp))
+
+                    // OS Service Status Row
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Text(
+                            text = "Accessibility Service:",
+                            fontSize = 11.sp,
+                            color = Color(0xFFCBD5E1)
+                        )
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Box(
+                                modifier = Modifier
+                                    .size(6.dp)
+                                    .background(if (serviceActive) Color(0xFF10B981) else Color(0xFFEF4444), CircleShape)
+                            )
+                            Spacer(modifier = Modifier.width(4.dp))
+                            Text(
+                                text = if (serviceActive) "ACTIVE" else "INACTIVE",
+                                fontSize = 11.sp,
+                                fontWeight = FontWeight.Bold,
+                                color = if (serviceActive) Color(0xFF10B981) else Color(0xFFEF4444)
+                            )
+                        }
+                    }
+
+                    Spacer(modifier = Modifier.height(6.dp))
+
+                    // Attempted / Dispatched / Dropped
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween
+                    ) {
+                        Column {
+                            Text(text = "ATTEMPTED", fontSize = 9.sp, color = Color(0xFF64748B), fontWeight = FontWeight.SemiBold)
+                            Text(text = "$attempted", fontSize = 14.sp, fontWeight = FontWeight.Bold, color = Color.White)
+                        }
+                        Column {
+                            Text(text = "DISPATCHED", fontSize = 9.sp, color = Color(0xFF64748B), fontWeight = FontWeight.SemiBold)
+                            Text(text = "$dispatched", fontSize = 14.sp, fontWeight = FontWeight.Bold, color = Color(0xFF10B981))
+                        }
+                        Column {
+                            Text(text = "DROPPED", fontSize = 9.sp, color = Color(0xFF64748B), fontWeight = FontWeight.SemiBold)
+                            Text(
+                                text = "$dropped",
+                                fontSize = 14.sp,
+                                fontWeight = FontWeight.Bold,
+                                color = if (dropped > 0) Color(0xFFEF4444) else Color(0xFF64748B)
+                            )
+                        }
+                    }
+
+                    Spacer(modifier = Modifier.height(8.dp))
+
+                    // Success Rate Progress Bar
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Text(text = "Delivery Success Rate:", fontSize = 11.sp, color = Color(0xFFCBD5E1))
+                        Text(
+                            text = "$successRate%",
+                            fontSize = 12.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = when {
+                                successRate == 100 -> Color(0xFF10B981)
+                                successRate >= 90 -> Color(0xFFFBBF24)
+                                else -> Color(0xFFEF4444)
+                            }
+                        )
+                    }
+
+                    Spacer(modifier = Modifier.height(4.dp))
+
+                    // Custom progress bar
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(4.dp)
+                            .background(Color(0xFF334155), RoundedCornerShape(2.dp))
+                    ) {
+                        Box(
+                            modifier = Modifier
+                                .fillMaxWidth(successRate / 100f)
+                                .fillMaxHeight()
+                                .background(
+                                    color = when {
+                                        successRate == 100 -> Color(0xFF10B981)
+                                        successRate >= 90 -> Color(0xFFFBBF24)
+                                        else -> Color(0xFFEF4444)
+                                    },
+                                    shape = RoundedCornerShape(2.dp)
+                                )
+                        )
+                    }
+
+                    Spacer(modifier = Modifier.height(8.dp))
+
+                    // Latency / Response Time
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Text(text = "Last Dispatch Time:", fontSize = 11.sp, color = Color(0xFFCBD5E1))
+                        Text(
+                            text = "${latency}ms",
+                            fontSize = 12.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = if (latency > 150) Color(0xFFFBBF24) else Color(0xFF34D399)
+                        )
+                    }
+
+                    Spacer(modifier = Modifier.height(8.dp))
+
+                    // Last Event Log Line
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .background(Color(0xFF1E293B), RoundedCornerShape(8.dp))
+                            .padding(horizontal = 8.dp, vertical = 6.dp)
+                    ) {
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Text(
+                                text = "Last Event:",
+                                fontSize = 10.sp,
+                                fontWeight = FontWeight.SemiBold,
+                                color = Color(0xFF64748B)
+                            )
+                            Spacer(modifier = Modifier.width(6.dp))
+                            Text(
+                                text = lastStatus,
+                                fontSize = 10.sp,
+                                fontWeight = FontWeight.Bold,
+                                color = Color(0xFFE2E8F0),
+                                maxLines = 1
+                            )
+                        }
+                    }
+
+                    // Throttling warning/tip
+                    if (isThrottled || dropped > 0 || !serviceActive) {
+                        Spacer(modifier = Modifier.height(8.dp))
+                        Column(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .background(Color(0x26EF4444), RoundedCornerShape(8.dp)) // 15% opacity red background
+                                .border(1.dp, Color(0x4DEF4444), RoundedCornerShape(8.dp))
+                                .padding(8.dp)
+                        ) {
+                            Text(
+                                text = if (!serviceActive) {
+                                    "⚠️ ACCESSIBILITY INACTIVE: Enable the NovaTap service in system settings or click actions will only be simulated."
+                                } else {
+                                    "⚠️ SYSTEM LAG WARNING: OS is slow delivering gestures. Inputs are being queued or dropped."
+                                },
+                                fontSize = 9.sp,
+                                fontWeight = FontWeight.SemiBold,
+                                color = Color(0xFFFCA5A5),
+                                lineHeight = 12.sp
+                            )
+                            Spacer(modifier = Modifier.height(4.dp))
+                            Text(
+                                text = "💡 Tip: Increase Interval / Hold Ms delays, or close heavy background apps to lower CPU load.",
+                                fontSize = 9.sp,
+                                color = Color(0xFF94A3B8),
+                                lineHeight = 12.sp
+                            )
+                        }
+                    }
+                }
             }
         }
     }

@@ -333,6 +333,12 @@ fun SwipeScreen(
                 }
             }
 
+            if (!viewModel.isAdFreeUser) {
+                com.novaboost.novatap.ui.components.AdmobBanner(
+                    modifier = Modifier.padding(vertical = 8.dp)
+                )
+            }
+
             // PRIMARY BIG TRIGGER
             val isActive = viewModel.isAutomationActive
             Button(

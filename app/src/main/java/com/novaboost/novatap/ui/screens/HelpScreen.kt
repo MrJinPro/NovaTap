@@ -118,9 +118,9 @@ fun HelpScreen(
             isRu = isRu
         )
 
-        // Guide 3: Area zone automation
+        // Guide 3: Area Zone Clicks (Flagship)
         HelpSectionCard(
-            title = if (isRu) "Зоны автоматизации" else "Area Automation Zones",
+            title = if (isRu) "Флагманские Зоны (Safe Farming) 🔥" else "Stochastic Area Zones (Flagship) 🔥",
             desc = if (isRu) {
                 "Самый передовой режим, практически неопределяемый защитными блокировками!\n\n" +
                 "Как это устроено:\n" +
@@ -193,6 +193,44 @@ fun HelpScreen(
                 "3. BATTERY EXEMPTIONS: Blocks Android system from freezing automation streams."
             },
             icon = Icons.Default.Settings,
+            isRu = isRu
+        )
+
+        // Guide 7: Premium, Limits & Ad Rules
+        HelpSectionCard(
+            title = if (isRu) "Лимиты, Реклама и Premium подписка" else "Daily Limits, Ads & Premium Pass",
+            desc = if (isRu) {
+                "В приложении действуют следующие правила для оптимальной работы:\n\n" +
+                "1. PREMIUM ПОЛЬЗОВАТЕЛИ: Абсолютно никаких ограничений, рекламы и лимитов! Вы можете совершать хоть миллиард кликов без сбросов и задержек.\n" +
+                "2. БЕСПЛАТНАЯ ВЕРСИЯ: Включает лимит 50 000 кликов (действий) каждые 24 часа.\n" +
+                "3. ДОБАВЛЕНИЕ КЛИКОВ ЗА РЕКЛАМУ: Неоплатившие пользователи могут получить еще +10 000 кликов за просмотр 30-секундного спонсорского видео. Допускается максимум 3 рекламы (+30 000 кликов) за 15 минут, после чего таймер сбросится и можно посмотреть снова.\n" +
+                "4. МЕЖСТРАНИЧНАЯ РЕКЛАМА: Короткая 5-секундная пропускаемая реклама показывается бесплатным пользователям при возвращении в приложение (не чаще раза в 45 секунд)."
+            } else {
+                "The application operates under the following resource & feature guidelines:\n\n" +
+                "1. PREMIUM USERS: Absolutely no restrictions, no ads, and no limits! You can make billions of clicks with infinite freedom and no resets needed.\n" +
+                "2. FREE TIER: Grants a starting limit of 50,000 auto-clicks (actions) every 24 hours.\n" +
+                "3. ADD CLICKS VIA ADS: Non-premium users can add +10,000 clicks by watching a 30-second sponsored video. You can watch up to 3 ads (+30,000 clicks) per 15 minutes, after which you can watch another 3 ads.\n" +
+                "4. INTERSTITIAL ADS: Quick 5-second skippable ad shows to free users when returning to the app (no more than once per 45s)."
+            },
+            icon = Icons.Default.Star,
+            isRu = isRu
+        )
+
+        // Guide 8: Themes & App Customization
+        HelpSectionCard(
+            title = if (isRu) "Темы оформления и Интерфейс" else "Themes & Appearance Setup",
+            desc = if (isRu) {
+                "Настройте внешний вид приложения под себя:\n\n" +
+                "1. ВЫБОР ТЕМЫ: В меню Настроек доступны три режима: Тёмная, Светлая и Системная тема.\n" +
+                "2. СИНХРОНИЗАЦИЯ: Системная тема автоматически адаптирует NovaTap под настройки вашего Android-устройства.\n" +
+                "3. ПЛАВАЮЩАЯ ПАНЕЛЬ: Все элементы управления на плавающей панели адаптируют свои цвета под выбранную тему автоматически."
+            } else {
+                "Tailor the visuals and style of your clicker workspace:\n\n" +
+                "1. THEME SELECTION: Toggle between Dark, Light, or System themes inside the Settings tab.\n" +
+                "2. SYSTEM SYNC: Selecting System Theme aligns NovaTap aesthetics with your Android device's global settings.\n" +
+                "3. FLOATING PANEL SUPPORT: All workspace tools and controllers dynamically adjust colors according to your active theme."
+            },
+            icon = Icons.Default.Palette,
             isRu = isRu
         )
     }

@@ -58,7 +58,7 @@ fun SingleTapScreen(
         val preset = viewModel.activeSingleTapPreset
         presetName = preset.name
         intervalMs = preset.intervalMs.toString()
-        holdMs = preset.holdMs.toString()
+        holdMs = "40"
         repeats = preset.repeatCount.toString()
         stopConditionType = preset.stopConditionType
         stopDurationAmount = preset.stopDurationAmount.toString()
@@ -336,7 +336,7 @@ fun SingleTapScreen(
                                 val activeVal = viewModel.activeSingleTapPreset.copy(
                                     name = presetName,
                                     intervalMs = intervalMs.toLongOrNull()?.coerceAtLeast(10) ?: 200,
-                                    holdMs = holdMs.toLongOrNull()?.coerceAtLeast(10) ?: 40,
+                                    holdMs = 10,
                                     repeatCount = repeats.toIntOrNull() ?: 0,
                                     stopConditionType = stopConditionType,
                                     stopDurationAmount = stopDurationAmount.toLongOrNull() ?: 10L,
@@ -363,12 +363,18 @@ fun SingleTapScreen(
                 }
             }
 
+            if (!viewModel.isAdFreeUser) {
+                com.novaboost.novatap.ui.components.AdmobBanner(
+                    modifier = Modifier.padding(vertical = 8.dp)
+                )
+            }
+
             // PRIMARY BIG TRIGGER CTA (Launches Workspace Overlay in Normal mode, runs directly in Expert Mode)
             val isActive = viewModel.isAutomationActive
             Button(
                 onClick = {
                     val finalInt = intervalMs.toLongOrNull()?.coerceAtLeast(10) ?: 200
-                    val finalHold = holdMs.toLongOrNull()?.coerceAtLeast(10) ?: 40L
+                    val finalHold = 10L
 
                     viewModel.activeSingleTapPreset = Preset(
                         name = presetName,

@@ -288,6 +288,12 @@ fun ScenarioScreen(
                 Text(if (isRu) "Сохранить Сценарий в БД" else "Save Automation Scenario Bundle")
             }
 
+            if (!viewModel.isAdFreeUser) {
+                com.novaboost.novatap.ui.components.AdmobBanner(
+                    modifier = Modifier.padding(vertical = 8.dp)
+                )
+            }
+
             // Run scenario
             val isActiveState = viewModel.isAutomationActive
             Button(
