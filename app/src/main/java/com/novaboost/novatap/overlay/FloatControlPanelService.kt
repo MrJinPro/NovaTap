@@ -17,7 +17,6 @@ import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.gestures.detectDragGestures
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
@@ -833,31 +832,23 @@ fun CompactControlPanelCard(
     onAddAreaZone: () -> Unit = {},
     onToggleDiagnostics: () -> Unit = {}
 ) {
-    val dragHandleHeight = 38.dp
-
     Card(
         modifier = Modifier
-            .width(64.dp),
+            .width(56.dp),
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface.copy(alpha = 0.94f)),
         shape = RoundedCornerShape(28.dp),
         border = BorderStroke(1.5.dp, MaterialTheme.colorScheme.primary.copy(alpha = 0.4f)),
         elevation = CardDefaults.cardElevation(12.dp)
     ) {
         Column(
-            modifier = Modifier
-                .padding(bottom = 8.dp)
-                .pointerInput(isPlaying) {
-                    if (isPlaying) {
-                        detectTapGestures(onTap = { onTogglePlay() })
-                    }
-                },
+            modifier = Modifier.padding(bottom = 8.dp),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
             // 1. DEDICATED DRAG HANDLE BOX (the exact touch target requested by the user!)
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .height(dragHandleHeight)
+                    .height(38.dp)
                     .background(
                         color = MaterialTheme.colorScheme.primary.copy(alpha = 0.15f),
                         shape = RoundedCornerShape(topStart = 28.dp, topEnd = 28.dp)
@@ -886,7 +877,7 @@ fun CompactControlPanelCard(
                 colors = IconButtonDefaults.iconButtonColors(
                     containerColor = if (isPlaying) MaterialTheme.colorScheme.error else Color(0xFF10B981)
                 ),
-                modifier = Modifier.size(52.dp)
+                modifier = Modifier.size(48.dp)
             ) {
                 Icon(
                     imageVector = if (isPlaying) Icons.Default.Pause else Icons.Default.PlayArrow,
@@ -904,7 +895,7 @@ fun CompactControlPanelCard(
                 colors = IconButtonDefaults.iconButtonColors(
                     containerColor = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.4f)
                 ),
-                modifier = Modifier.size(52.dp)
+                modifier = Modifier.size(48.dp)
             ) {
                 Icon(
                     imageVector = if (isExpanded) Icons.Default.KeyboardArrowUp else Icons.Default.KeyboardArrowDown,
@@ -926,7 +917,7 @@ fun CompactControlPanelCard(
                     colors = IconButtonDefaults.iconButtonColors(
                         containerColor = MaterialTheme.colorScheme.secondaryContainer
                     ),
-                    modifier = Modifier.size(52.dp)
+                    modifier = Modifier.size(48.dp)
                 ) {
                     Icon(
                         imageVector = Icons.Default.Settings,
@@ -944,7 +935,7 @@ fun CompactControlPanelCard(
                     colors = IconButtonDefaults.iconButtonColors(
                         containerColor = MaterialTheme.colorScheme.errorContainer.copy(alpha = 0.8f)
                     ),
-                    modifier = Modifier.size(52.dp)
+                    modifier = Modifier.size(48.dp)
                 ) {
                     Icon(
                         imageVector = Icons.Default.Close,
@@ -962,7 +953,7 @@ fun CompactControlPanelCard(
                     colors = IconButtonDefaults.iconButtonColors(
                         containerColor = if (snapToGrid) MaterialTheme.colorScheme.primaryContainer else Color.Transparent
                     ),
-                    modifier = Modifier.size(52.dp)
+                    modifier = Modifier.size(48.dp)
                 ) {
                     Icon(
                         imageVector = Icons.Default.GridOn,
@@ -983,7 +974,7 @@ fun CompactControlPanelCard(
                     colors = IconButtonDefaults.iconButtonColors(
                         containerColor = if (viewModel.showDiagnostics) MaterialTheme.colorScheme.primaryContainer else Color.Transparent
                     ),
-                    modifier = Modifier.size(52.dp)
+                    modifier = Modifier.size(48.dp)
                 ) {
                     Icon(
                         imageVector = Icons.Default.BugReport,
@@ -1002,7 +993,7 @@ fun CompactControlPanelCard(
                             colors = IconButtonDefaults.iconButtonColors(
                                 containerColor = MaterialTheme.colorScheme.primaryContainer
                             ),
-                            modifier = Modifier.size(52.dp)
+                            modifier = Modifier.size(48.dp)
                         ) {
                             Icon(
                                 imageVector = Icons.Default.AddLocation,
@@ -1020,7 +1011,7 @@ fun CompactControlPanelCard(
                             colors = IconButtonDefaults.iconButtonColors(
                                 containerColor = MaterialTheme.colorScheme.primaryContainer
                             ),
-                            modifier = Modifier.size(52.dp)
+                            modifier = Modifier.size(48.dp)
                         ) {
                             Icon(
                                 imageVector = Icons.Default.AcUnit,
@@ -1032,7 +1023,6 @@ fun CompactControlPanelCard(
                     }
                 }
             }
-
         }
     }
 }
