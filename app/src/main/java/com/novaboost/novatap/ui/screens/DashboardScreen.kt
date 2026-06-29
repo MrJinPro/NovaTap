@@ -322,7 +322,7 @@ fun DashboardScreen(
                 // Card 3: Area Tap (Flagship!)
                 ModuleGridCard(
                     title = if (isRu) "Нажатие Зон" else "Area Tap",
-                    subtitle = if (isRu) "ФЛАГМАНСКИЙ" else "FLAGSHIP MODULE",
+                    subtitle = if (isRu) "Расширенный режим" else "Advanced mode",
                     icon = Icons.Default.FilterCenterFocus,
                     accentColor = CyberBlue,
                     isFlagship = true,
@@ -458,7 +458,7 @@ fun DashboardScreen(
                         modifier = Modifier.size(18.dp)
                     )
                     Text(
-                        text = if (isRu) "Нажмите, чтобы бесплатно получить +10k кликов" else "Click to claim free +10k clicks",
+                        text = if (isRu) "Нажмите, чтобы получить дополнительные действия" else "Tap to claim extra actions",
                         style = MaterialTheme.typography.bodySmall.copy(fontWeight = FontWeight.Medium),
                         color = CyberBlue
                     )

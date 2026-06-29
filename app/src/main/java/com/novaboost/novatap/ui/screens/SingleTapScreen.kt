@@ -58,7 +58,7 @@ fun SingleTapScreen(
         val preset = viewModel.activeSingleTapPreset
         presetName = preset.name
         intervalMs = preset.intervalMs.toString()
-        holdMs = "40"
+        holdMs = preset.holdMs.toString()
         repeats = preset.repeatCount.toString()
         stopConditionType = preset.stopConditionType
         stopDurationAmount = preset.stopDurationAmount.toString()
@@ -336,7 +336,7 @@ fun SingleTapScreen(
                                 val activeVal = viewModel.activeSingleTapPreset.copy(
                                     name = presetName,
                                     intervalMs = intervalMs.toLongOrNull()?.coerceAtLeast(10) ?: 200,
-                                    holdMs = 10,
+                                    holdMs = holdMs.toLongOrNull()?.coerceAtLeast(10) ?: 40,
                                     repeatCount = repeats.toIntOrNull() ?: 0,
                                     stopConditionType = stopConditionType,
                                     stopDurationAmount = stopDurationAmount.toLongOrNull() ?: 10L,
@@ -374,7 +374,7 @@ fun SingleTapScreen(
             Button(
                 onClick = {
                     val finalInt = intervalMs.toLongOrNull()?.coerceAtLeast(10) ?: 200
-                    val finalHold = 10L
+                    val finalHold = holdMs.toLongOrNull()?.coerceAtLeast(10) ?: 40L
 
                     viewModel.activeSingleTapPreset = Preset(
                         name = presetName,

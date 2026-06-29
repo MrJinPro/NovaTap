@@ -5,7 +5,9 @@ import android.content.Context
 import android.content.Intent
 import android.graphics.PixelFormat
 import android.os.Build
+import android.os.Handler
 import android.os.IBinder
+import android.os.Looper
 import android.view.Gravity
 import android.view.View
 import android.view.WindowManager
@@ -79,6 +81,15 @@ class FloatControlPanelService : Service() {
 
     private var snapToGrid = false
 
+    private val overlayRefreshHandler = Handler(Looper.getMainLooper())
+    private val overlayRefreshRunnable = Runnable {
+        try {
+            recreateOverlayWindows()
+        } catch (e: Exception) {
+            e.printStackTrace()
+        }
+    }
+
     private val serviceLifecycleOwner = MyServiceLifecycleOwner()
     private val serviceViewModelStoreOwner = object : ViewModelStoreOwner {
         override val viewModelStore: ViewModelStore = ViewModelStore()
@@ -110,9 +121,9 @@ class FloatControlPanelService : Service() {
         MainViewModel.instance?.isOverlayWorkspaceActive = true
 
         MainViewModel.instance?.onAutomationActiveChanged = { active ->
-            android.os.Handler(android.os.Looper.getMainLooper()).post {
+            overlayRefreshHandler.post {
                 isWorkspacePlaying = active
-                recreateOverlayWindows()
+                scheduleOverlayRefresh(80)
             }
         }
     }
@@ -121,13 +132,18 @@ class FloatControlPanelService : Service() {
         intent?.getStringExtra("mode")?.let {
             currentMode = it
         }
-        recreateOverlayWindows()
+        scheduleOverlayRefresh(80)
         return START_STICKY
     }
 
     private fun dpToPx(dp: Float): Int {
         val density = resources.displayMetrics.density
         return (dp * density).roundToInt()
+    }
+
+    private fun scheduleOverlayRefresh(delayMs: Long = 120L) {
+        overlayRefreshHandler.removeCallbacks(overlayRefreshRunnable)
+        overlayRefreshHandler.postDelayed(overlayRefreshRunnable, delayMs)
     }
 
     private fun createComposeView(content: @Composable () -> Unit): ComposeView {
@@ -236,8 +252,9 @@ class FloatControlPanelService : Service() {
                     isRu = viewModel.selectedLanguage == "ru",
                     isPlaying = isWorkspacePlaying,
                     onTogglePlay = {
-                        isWorkspacePlaying = !isWorkspacePlaying
-                        if (isWorkspacePlaying) {
+                        val shouldStart = !viewModel.isAutomationActive
+                        if (shouldStart) {
+                            isWorkspacePlaying = true
                             when (currentMode) {
                                 "single" -> viewModel.startSingleTapAutomation()
                                 "multi" -> viewModel.startMultiTapAutomation()
@@ -245,9 +262,10 @@ class FloatControlPanelService : Service() {
                                 "swipe" -> viewModel.startSwipeAutomation()
                             }
                         } else {
+                            isWorkspacePlaying = false
                             viewModel.stopAutomation()
                         }
-                        recreateOverlayWindows()
+                        scheduleOverlayRefresh(120)
                     },
                     isExpanded = isExpanded,
                     onToggleExpand = {
@@ -834,7 +852,7 @@ fun CompactControlPanelCard(
 ) {
     Card(
         modifier = Modifier
-            .width(56.dp),
+            .width(72.dp),
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface.copy(alpha = 0.94f)),
         shape = RoundedCornerShape(28.dp),
         border = BorderStroke(1.5.dp, MaterialTheme.colorScheme.primary.copy(alpha = 0.4f)),
@@ -880,8 +898,8 @@ fun CompactControlPanelCard(
                 modifier = Modifier.size(48.dp)
             ) {
                 Icon(
-                    imageVector = if (isPlaying) Icons.Default.Pause else Icons.Default.PlayArrow,
-                    contentDescription = if (isPlaying) "Pause" else "Play",
+                    imageVector = if (isPlaying) Icons.Default.Stop else Icons.Default.PlayArrow,
+                    contentDescription = if (isPlaying) "Stop automation" else "Start automation",
                     tint = Color.White,
                     modifier = Modifier.size(24.dp)
                 )

@@ -125,7 +125,7 @@
 
     <!-- First Launch Onboarding -->
     <string name="onboarding_welcome_title">Добро пожаловать в NovaTap!</string>
-    <string name="onboarding_welcome_desc">Автоматизируйте клики, свайпы и сложные области экрана с помощью передового алгоритма Human Touch.</string>
+    <string name="onboarding_welcome_desc">Автоматизируйте клики, свайпы и зоны экрана с настраиваемыми параметрами и мягкой вариативностью.</string>
     <string name="onboarding_accessibility_title">Служба специальных возможностей</string>
     <string name="onboarding_accessibility_desc">NovaTap требует разрешение специальной возможности для эмуляции нажатий и жестов свайпа по экрану. Личные данные не собираются и не передаются.</string>
     <string name="onboarding_overlay_title">Разрешение поверх приложений</string>
@@ -160,7 +160,7 @@
     <string name="guide_single_tap_desc">Научитесь размещать фиксированную цель-кликер в любом месте экрана с миллисекундной точностью временных задержек.</string>
     <string name="guide_multi_tap_title">Мульти-нажатия</string>
     <string name="guide_multi_tap_desc">Нужны сложные циклические клики в нескольких местах экрана? Настройте до 20 точек с индивидуальными задержками.</string>
-    <string name="guide_area_tap_title">Клик по зонам (флагманская фича)</string>
+    <string name="guide_area_tap_title">Клик по зонам</string>
     <string name="guide_area_tap_desc">Самая безопасная симуляция! Нарисуйте разрешенные (зелёные) и запрещенные (красные) зоны. Алгоритм будет кликать случайно только внутри разрешенных областей.</string>
     <string name="guide_swipe_title">Свайпы и перетаскивания</string>
     <string name="guide_swipe_desc">Имитируйте плавные движения по траекториям. Настраивайте удержание и стройте очеловеченные нелинейные кривые.</string>

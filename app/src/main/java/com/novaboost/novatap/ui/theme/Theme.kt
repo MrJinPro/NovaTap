@@ -43,7 +43,7 @@ private val LightColorScheme = lightColorScheme(
 
 @Composable
 fun NovaTapTheme(
-    darkTheme: Boolean = true, // Force Dark theme by default for the premium futuristic feel
+    darkTheme: Boolean = true, // Default to dark theme for the app experience
     dynamicColor: Boolean = false, // Set false to preserve our custom brand colors
     content: @Composable () -> Unit
 ) {
