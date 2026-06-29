@@ -14,8 +14,8 @@ android {
     applicationId = "com.novaboost.novatap"
     minSdk = 24
     targetSdk = 36
-    versionCode = 9
-    versionName = "9.0"
+    versionCode = 10
+    versionName = "0.0.0.10"
 
     testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
   }
@@ -33,11 +33,9 @@ android {
         keyAlias = keyAl
         keyPassword = keyPass
       } else {
-        // Fallback for local/CI builds without production keys
-        storeFile = file("${rootDir}/debug.keystore")
-        storePassword = "android"
-        keyAlias = "androiddebugkey"
-        keyPassword = "android"
+        throw GradleException(
+          "Release signing is not configured. Set KEYSTORE_PATH, STORE_PASSWORD, KEY_PASSWORD and KEY_ALIAS env vars to build a Play-uploadable AAB."
+        )
       }
     }
     create("debugConfig") {
@@ -56,6 +54,7 @@ android {
       signingConfig = signingConfigs.getByName("release")
     }
     debug {
+      signingConfig = signingConfigs.getByName("debugConfig")
     }
   }
   compileOptions {

@@ -118,9 +118,9 @@ fun HelpScreen(
             isRu = isRu
         )
 
-        // Guide 3: Area zone automation
+        // Guide 3: Area Zone Clicks (Flagship)
         HelpSectionCard(
-            title = if (isRu) "Зоны автоматизации" else "Area Automation Zones",
+            title = if (isRu) "Флагманские Зоны (Safe Farming) 🔥" else "Stochastic Area Zones (Flagship) 🔥",
             desc = if (isRu) {
                 "Самый передовой режим, практически неопределяемый защитными блокировками!\n\n" +
                 "Как это устроено:\n" +

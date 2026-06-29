@@ -125,7 +125,7 @@
 
     <!-- First Launch Onboarding -->
     <string name="onboarding_welcome_title">Welcome to NovaTap!</string>
-    <string name="onboarding_welcome_desc">Automate clicks, swipes, and screen zones with configurable timing and human-like variations.</string>
+    <string name="onboarding_welcome_desc">Automate clicks, swipes, and complex screen zones safely with our premium Human Touch Engine.</string>
     <string name="onboarding_accessibility_title">Accessibility Service</string>
     <string name="onboarding_accessibility_desc">NovaTap requires the Accessibility Service Permission to perform automated gestures (clicks/swipes) on your screen. No personal data is read or collected.</string>
     <string name="onboarding_overlay_title">Overlay Permission</string>
@@ -160,7 +160,7 @@
     <string name="guide_single_tap_desc">Learn how to place a constant target clicker anywhere on the screen with milliseconds frequency precision.</string>
     <string name="guide_multi_tap_title">Multi Tap Guide</string>
     <string name="guide_multi_tap_desc">Need complex sequential loop clickers? Set up up to 20 nodes with delay timings in sequential or stochastic loop orders.</string>
-    <string name="guide_area_tap_title">Area Tap Guide</string>
+    <string name="guide_area_tap_title">Area Tap Flagship Guide</string>
     <string name="guide_area_tap_desc">The safest clicker mechanism! Outline allowed (green) and blocked (red) zones. Our engine will randomize clicks inside valid spots, never crossing red-lines.</string>
     <string name="guide_swipe_title">Swipe &amp; Drag Guide</string>
     <string name="guide_swipe_desc">Simulate curved dragging gestures. Tweak duration to emulate slow drifts or quick swipes with Humanized Noise paths.</string>

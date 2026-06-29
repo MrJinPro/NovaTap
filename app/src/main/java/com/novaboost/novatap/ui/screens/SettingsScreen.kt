@@ -35,7 +35,6 @@ fun SettingsScreen(
     val scrollState = rememberScrollState()
     val context = LocalContext.current
     val isRu = viewModel.selectedLanguage == "ru"
-    val showTapMockTasks = false
 
     Column(
         modifier = Modifier
@@ -501,55 +500,91 @@ fun SettingsScreen(
             }
         }
 
-        if (showTapMockTasks) {
-            // Clicker Display Preferences
-            Card(
-                modifier = Modifier.fillMaxWidth(),
-                colors = CardDefaults.cardColors(containerColor = CardDarkBg.copy(alpha = 0.5f)),
-                shape = RoundedCornerShape(24.dp),
-                border = BorderStroke(1.dp, Color(0x0DFFFFFF))
-            ) {
-                Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                    Text(
-                        text = if (isRu) "Параметры работы кликов" else "Tap Display & Security Settings",
-                        style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
-                        color = Color.White
-                    )
+        // Clicker Display Preferences
+        Card(
+            modifier = Modifier.fillMaxWidth(),
+            colors = CardDefaults.cardColors(containerColor = CardDarkBg.copy(alpha = 0.5f)),
+            shape = RoundedCornerShape(24.dp),
+            border = BorderStroke(1.dp, Color(0x0DFFFFFF))
+        ) {
+            Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                Text(
+                    text = if (isRu) "Параметры работы кликов" else "Tap Display & Security Settings",
+                    style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
+                    color = Color.White
+                )
 
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.SpaceBetween
-                    ) {
-                        Column(modifier = Modifier.weight(1f).padding(end = 8.dp)) {
-                            Text(
-                                text = if (isRu) "Анимация кругов нажатий" else "Show Tap Ripple Ripples",
-                                style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.Bold),
-                                color = Color.White
-                            )
-                            Spacer(modifier = Modifier.height(4.dp))
-                            Text(
-                                text = if (isRu) 
-                                    "Визуальный эффект в точке клика. На Android 12+ включение может блокировать нажатия или вызывать предупреждения системы из-за правил безопасности (кликджекинг). Рекомендуется выключить для стабильной работы." 
-                                else 
-                                    "Visual effect at tap coordinates. On Android 12+, enabling this can cause blocked clicks or system warnings due to clickjacking security rules. Keep disabled for stable tapping.",
-                                style = MaterialTheme.typography.bodySmall,
-                                color = TextMuted
-                            )
-                        }
-
-                        Switch(
-                            checked = viewModel.showTapRipples,
-                            onCheckedChange = { viewModel.toggleTapRipples(it) },
-                            colors = SwitchDefaults.colors(
-                                checkedThumbColor = CyberBlue,
-                                checkedTrackColor = CyberBlue.copy(alpha = 0.4f),
-                                uncheckedThumbColor = Color.Gray,
-                                uncheckedTrackColor = Color.Gray.copy(alpha = 0.3f)
-                            ),
-                            modifier = Modifier.testTag("tap_ripples_switch")
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.SpaceBetween
+                ) {
+                    Column(modifier = Modifier.weight(1f).padding(end = 8.dp)) {
+                        Text(
+                            text = if (isRu) "Анимация кругов нажатий" else "Show Tap Ripple Ripples",
+                            style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.Bold),
+                            color = Color.White
+                        )
+                        Spacer(modifier = Modifier.height(4.dp))
+                        Text(
+                            text = if (isRu) 
+                                "Визуальный эффект в точке клика. На Android 12+ включение может блокировать нажатия или вызывать предупреждения системы из-за правил безопасности (кликджекинг). Рекомендуется выключить для стабильной работы." 
+                            else 
+                                "Visual effect at tap coordinates. On Android 12+, enabling this can cause blocked clicks or system warnings due to clickjacking security rules. Keep disabled for stable tapping.",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = TextMuted
                         )
                     }
+
+                    Switch(
+                        checked = viewModel.showTapRipples,
+                        onCheckedChange = { viewModel.toggleTapRipples(it) },
+                        colors = SwitchDefaults.colors(
+                            checkedThumbColor = CyberBlue,
+                            checkedTrackColor = CyberBlue.copy(alpha = 0.4f),
+                            uncheckedThumbColor = Color.Gray,
+                            uncheckedTrackColor = Color.Gray.copy(alpha = 0.3f)
+                        ),
+                        modifier = Modifier.testTag("tap_ripples_switch")
+                    )
+                }
+
+                Divider(color = Color(0x1FFFFFFF), thickness = 1.dp, modifier = Modifier.padding(vertical = 12.dp))
+
+                // 4. Diagnostics Overlay Setting Row
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Column(modifier = Modifier.weight(1f).padding(end = 12.dp)) {
+                        Text(
+                            text = if (isRu) "Диагностический оверлей" else "Real-time Diagnostics Overlay",
+                            style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
+                            color = Color.White
+                        )
+                        Spacer(modifier = Modifier.height(4.dp))
+                        Text(
+                            text = if (isRu) 
+                                "Всплывающий HUD, показывающий регистрацию кликов, процент успеха доставки и задержку очереди жестов ОС в реальном времени. Помогает отладить заблокированные или пропущенные нажатия." 
+                            else 
+                                "Floating heads-up-display showing tap registrations, delivery success rate, and OS gesture queue response latency in real-time. Helps debug blocked or dropped clicks.",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = TextMuted
+                        )
+                    }
+
+                    Switch(
+                        checked = viewModel.showDiagnostics,
+                        onCheckedChange = { viewModel.toggleDiagnostics(it) },
+                        colors = SwitchDefaults.colors(
+                            checkedThumbColor = CyberBlue,
+                            checkedTrackColor = CyberBlue.copy(alpha = 0.4f),
+                            uncheckedThumbColor = Color.Gray,
+                            uncheckedTrackColor = Color.Gray.copy(alpha = 0.3f)
+                        ),
+                        modifier = Modifier.testTag("diagnostics_switch")
+                    )
                 }
 
                 Divider(color = Color(0x1FFFFFFF), thickness = 1.dp, modifier = Modifier.padding(vertical = 12.dp))
@@ -652,7 +687,7 @@ fun SettingsScreen(
                     fontWeight = FontWeight.Bold
                 )
                 Text(
-                    text = "v4.0.0 - Stable build",
+                    text = "v4.0.0 - Premium Stable Release",
                     style = MaterialTheme.typography.labelSmall,
                     color = TextMuted.copy(alpha = 0.6f)
                 )

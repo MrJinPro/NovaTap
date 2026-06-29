@@ -373,8 +373,8 @@ fun MultiTapScreen(
             val isActive = viewModel.isAutomationActive
             Button(
                 onClick = {
-                    val finalInt = intervalMs.toLongOrNull()?.coerceAtLeast(10) ?: 300L
-                    val finalHold = holdMs.toLongOrNull()?.coerceAtLeast(10) ?: 50L
+                    val finalInt = 300L
+                    val finalHold = 50L
 
                     viewModel.activeMultiTapPreset = Preset(
                         name = presetName,

@@ -5,9 +5,7 @@ import android.content.Context
 import android.content.Intent
 import android.graphics.PixelFormat
 import android.os.Build
-import android.os.Handler
 import android.os.IBinder
-import android.os.Looper
 import android.view.Gravity
 import android.view.View
 import android.view.WindowManager
@@ -19,6 +17,7 @@ import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.gestures.detectDragGestures
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
@@ -81,15 +80,6 @@ class FloatControlPanelService : Service() {
 
     private var snapToGrid = false
 
-    private val overlayRefreshHandler = Handler(Looper.getMainLooper())
-    private val overlayRefreshRunnable = Runnable {
-        try {
-            recreateOverlayWindows()
-        } catch (e: Exception) {
-            e.printStackTrace()
-        }
-    }
-
     private val serviceLifecycleOwner = MyServiceLifecycleOwner()
     private val serviceViewModelStoreOwner = object : ViewModelStoreOwner {
         override val viewModelStore: ViewModelStore = ViewModelStore()
@@ -121,9 +111,9 @@ class FloatControlPanelService : Service() {
         MainViewModel.instance?.isOverlayWorkspaceActive = true
 
         MainViewModel.instance?.onAutomationActiveChanged = { active ->
-            overlayRefreshHandler.post {
+            android.os.Handler(android.os.Looper.getMainLooper()).post {
                 isWorkspacePlaying = active
-                scheduleOverlayRefresh(80)
+                recreateOverlayWindows()
             }
         }
     }
@@ -132,18 +122,13 @@ class FloatControlPanelService : Service() {
         intent?.getStringExtra("mode")?.let {
             currentMode = it
         }
-        scheduleOverlayRefresh(80)
+        recreateOverlayWindows()
         return START_STICKY
     }
 
     private fun dpToPx(dp: Float): Int {
         val density = resources.displayMetrics.density
         return (dp * density).roundToInt()
-    }
-
-    private fun scheduleOverlayRefresh(delayMs: Long = 120L) {
-        overlayRefreshHandler.removeCallbacks(overlayRefreshRunnable)
-        overlayRefreshHandler.postDelayed(overlayRefreshRunnable, delayMs)
     }
 
     private fun createComposeView(content: @Composable () -> Unit): ComposeView {
@@ -252,9 +237,8 @@ class FloatControlPanelService : Service() {
                     isRu = viewModel.selectedLanguage == "ru",
                     isPlaying = isWorkspacePlaying,
                     onTogglePlay = {
-                        val shouldStart = !viewModel.isAutomationActive
-                        if (shouldStart) {
-                            isWorkspacePlaying = true
+                        isWorkspacePlaying = !isWorkspacePlaying
+                        if (isWorkspacePlaying) {
                             when (currentMode) {
                                 "single" -> viewModel.startSingleTapAutomation()
                                 "multi" -> viewModel.startMultiTapAutomation()
@@ -262,10 +246,9 @@ class FloatControlPanelService : Service() {
                                 "swipe" -> viewModel.startSwipeAutomation()
                             }
                         } else {
-                            isWorkspacePlaying = false
                             viewModel.stopAutomation()
                         }
-                        scheduleOverlayRefresh(120)
+                        recreateOverlayWindows()
                     },
                     isExpanded = isExpanded,
                     onToggleExpand = {
@@ -850,23 +833,31 @@ fun CompactControlPanelCard(
     onAddAreaZone: () -> Unit = {},
     onToggleDiagnostics: () -> Unit = {}
 ) {
+    val dragHandleHeight = 38.dp
+
     Card(
         modifier = Modifier
-            .width(72.dp),
+            .width(64.dp),
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface.copy(alpha = 0.94f)),
         shape = RoundedCornerShape(28.dp),
         border = BorderStroke(1.5.dp, MaterialTheme.colorScheme.primary.copy(alpha = 0.4f)),
         elevation = CardDefaults.cardElevation(12.dp)
     ) {
         Column(
-            modifier = Modifier.padding(bottom = 8.dp),
+            modifier = Modifier
+                .padding(bottom = 8.dp)
+                .pointerInput(isPlaying) {
+                    if (isPlaying) {
+                        detectTapGestures(onTap = { onTogglePlay() })
+                    }
+                },
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
             // 1. DEDICATED DRAG HANDLE BOX (the exact touch target requested by the user!)
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .height(38.dp)
+                    .height(dragHandleHeight)
                     .background(
                         color = MaterialTheme.colorScheme.primary.copy(alpha = 0.15f),
                         shape = RoundedCornerShape(topStart = 28.dp, topEnd = 28.dp)
@@ -895,11 +886,11 @@ fun CompactControlPanelCard(
                 colors = IconButtonDefaults.iconButtonColors(
                     containerColor = if (isPlaying) MaterialTheme.colorScheme.error else Color(0xFF10B981)
                 ),
-                modifier = Modifier.size(48.dp)
+                modifier = Modifier.size(52.dp)
             ) {
                 Icon(
-                    imageVector = if (isPlaying) Icons.Default.Stop else Icons.Default.PlayArrow,
-                    contentDescription = if (isPlaying) "Stop automation" else "Start automation",
+                    imageVector = if (isPlaying) Icons.Default.Pause else Icons.Default.PlayArrow,
+                    contentDescription = if (isPlaying) "Pause" else "Play",
                     tint = Color.White,
                     modifier = Modifier.size(24.dp)
                 )
@@ -913,7 +904,7 @@ fun CompactControlPanelCard(
                 colors = IconButtonDefaults.iconButtonColors(
                     containerColor = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.4f)
                 ),
-                modifier = Modifier.size(48.dp)
+                modifier = Modifier.size(52.dp)
             ) {
                 Icon(
                     imageVector = if (isExpanded) Icons.Default.KeyboardArrowUp else Icons.Default.KeyboardArrowDown,
@@ -935,7 +926,7 @@ fun CompactControlPanelCard(
                     colors = IconButtonDefaults.iconButtonColors(
                         containerColor = MaterialTheme.colorScheme.secondaryContainer
                     ),
-                    modifier = Modifier.size(48.dp)
+                    modifier = Modifier.size(52.dp)
                 ) {
                     Icon(
                         imageVector = Icons.Default.Settings,
@@ -953,7 +944,7 @@ fun CompactControlPanelCard(
                     colors = IconButtonDefaults.iconButtonColors(
                         containerColor = MaterialTheme.colorScheme.errorContainer.copy(alpha = 0.8f)
                     ),
-                    modifier = Modifier.size(48.dp)
+                    modifier = Modifier.size(52.dp)
                 ) {
                     Icon(
                         imageVector = Icons.Default.Close,
@@ -971,7 +962,7 @@ fun CompactControlPanelCard(
                     colors = IconButtonDefaults.iconButtonColors(
                         containerColor = if (snapToGrid) MaterialTheme.colorScheme.primaryContainer else Color.Transparent
                     ),
-                    modifier = Modifier.size(48.dp)
+                    modifier = Modifier.size(52.dp)
                 ) {
                     Icon(
                         imageVector = Icons.Default.GridOn,
@@ -992,7 +983,7 @@ fun CompactControlPanelCard(
                     colors = IconButtonDefaults.iconButtonColors(
                         containerColor = if (viewModel.showDiagnostics) MaterialTheme.colorScheme.primaryContainer else Color.Transparent
                     ),
-                    modifier = Modifier.size(48.dp)
+                    modifier = Modifier.size(52.dp)
                 ) {
                     Icon(
                         imageVector = Icons.Default.BugReport,
@@ -1011,7 +1002,7 @@ fun CompactControlPanelCard(
                             colors = IconButtonDefaults.iconButtonColors(
                                 containerColor = MaterialTheme.colorScheme.primaryContainer
                             ),
-                            modifier = Modifier.size(48.dp)
+                            modifier = Modifier.size(52.dp)
                         ) {
                             Icon(
                                 imageVector = Icons.Default.AddLocation,
@@ -1029,7 +1020,7 @@ fun CompactControlPanelCard(
                             colors = IconButtonDefaults.iconButtonColors(
                                 containerColor = MaterialTheme.colorScheme.primaryContainer
                             ),
-                            modifier = Modifier.size(48.dp)
+                            modifier = Modifier.size(52.dp)
                         ) {
                             Icon(
                                 imageVector = Icons.Default.AcUnit,
@@ -1041,6 +1032,7 @@ fun CompactControlPanelCard(
                     }
                 }
             }
+
         }
     }
 }

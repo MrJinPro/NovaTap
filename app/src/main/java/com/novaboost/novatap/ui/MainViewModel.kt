@@ -149,7 +149,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     var multiTapPoints by mutableStateOf<List<TapPoint>>(emptyList())
     var activeMultiTapPreset by mutableStateOf(Preset(name = "Multi Tap Preset", type = "multi", mode = "sequential", intervalMs = 300, holdMs = 50))
 
-    // Area tap zone list
+    // Flagship Area tap zone list
     var areaTapZones by mutableStateOf<List<TapZone>>(emptyList())
     var activeAreaTapPreset by mutableStateOf(Preset(name = "Area Tap Preset", type = "area", mode = "balanced_random", intervalMs = 400, holdMs = 60))
 
@@ -1243,25 +1243,16 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
 
     // Stop Automation
     fun stopAutomation() {
-        if (!isAutomationActive && automationJob == null) {
-            executionLog.value = "Automation is already stopped."
-            return
-        }
-
         isAutomationActive = false
-        try {
-            automationJob?.cancel()
-        } catch (e: Exception) {
-            logException(e, "stopAutomation")
-        }
+        automationJob?.cancel()
         automationJob = null
         executionLog.value = "Automation session stopped."
     }
 
     // Trigger Tap automation sequence
     fun startSingleTapAutomation() {
-        stopAutomation()
         if (isAutomationActive) {
+            stopAutomation()
             return
         }
 
@@ -1359,8 +1350,8 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
 
     // Trigger Multi-Tap automation sequence
     fun startMultiTapAutomation() {
-        stopAutomation()
         if (isAutomationActive) {
+            stopAutomation()
             return
         }
 
@@ -1384,7 +1375,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         automationJob = viewModelScope.launch {
             var counter = 0
             var currentIndex = 0
-            while (isAutomationActive && isRunningAndNotEmpty(multiTapPoints)) {
+            while (isRunningAndNotEmpty(multiTapPoints)) {
                 if (getRemainingActions() <= 0) {
                     isAutomationActive = false
                     displayLimitDialog = true
@@ -1463,10 +1454,10 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         return isAutomationActive && list.isNotEmpty()
     }
 
-    // Area tap engine with allowed and blocked zones.
+    // Flagship Area Tap engine! Includes allowed and blocked zones.
     fun startAreaTapAutomation() {
-        stopAutomation()
         if (isAutomationActive) {
+            stopAutomation()
             return
         }
 
@@ -1477,7 +1468,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
 
         val config = activeAreaTapPreset
         isAutomationActive = true
-        executionLog.value = "Area tap loop is running..."
+        executionLog.value = "Flagship Area Tap Loop running stochastic engine..."
 
         val stopDurationMs = when (config.stopDurationUnit) {
             "seconds" -> config.stopDurationAmount * 1000L
@@ -1634,8 +1625,8 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
 
     // Trigger Swipe gesture automation sequence
     fun startSwipeAutomation() {
-        stopAutomation()
         if (isAutomationActive) {
+            stopAutomation()
             return
         }
 
