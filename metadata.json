@@ -1,6 +1,4 @@
 {
   "name": "NovaTap",
-  "description": "Advanced touch automation application with Human Touch Engine, customized tapping zones, and scenarios.",
-  "requestFramePermissions": [],
-  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+  "description": "Touch automation application for single-tap, multi-tap, swipe, and scenario-based interaction workflows."
 }

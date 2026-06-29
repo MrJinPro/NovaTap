@@ -58,7 +58,7 @@ fun AreaTapScreen(
         val preset = viewModel.activeAreaTapPreset
         bActivePresetName = preset.name
         intervalMs = preset.intervalMs.toString()
-        holdMs = "40"
+        holdMs = preset.holdMs.toString()
         repeats = preset.repeatCount.toString()
         stopConditionType = preset.stopConditionType
         stopDurationAmount = preset.stopDurationAmount.toString()
@@ -104,7 +104,7 @@ fun AreaTapScreen(
                 .padding(16.dp),
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
-            // NovaTap Smart Zones™ Premium Hero Branding Card
+            // Area automation overview card
             Card(
                 colors = CardDefaults.cardColors(
                     containerColor = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.15f)
@@ -122,7 +122,7 @@ fun AreaTapScreen(
                             .padding(horizontal = 14.dp, vertical = 6.dp)
                     ) {
                         Text(
-                            text = "NOVATAP SMART ZONES™ FLAGSHIP",
+                            text = "AREA AUTOMATION",
                             style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold),
                             color = MaterialTheme.colorScheme.primary
                         )
@@ -140,9 +140,9 @@ fun AreaTapScreen(
 
                     Text(
                         text = if (isRu) {
-                            "Ультимативная запатентованная технология: клики стохастически распределяются в разрешённых зелёных зонах и никогда не переходят в запрещённые красные блоки."
+                            "Клики распределяются внутри разрешенных зон. Запрещённые зоны остаются недоступными для действий."
                         } else {
-                            "Ultimate anti-cheat tech: clicks stochastically distribute over green Allowed spaces, while solid Red Blocked zones safeguard menu bars and settings."
+                            "Allowed zones receive the generated taps, while blocked zones are excluded from action targets."
                         },
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onPrimaryContainer,
@@ -391,7 +391,7 @@ fun AreaTapScreen(
                                 val activeVal = viewModel.activeAreaTapPreset.copy(
                                     name = bActivePresetName,
                                     intervalMs = intervalMs.toLongOrNull()?.coerceAtLeast(10) ?: 400,
-                                    holdMs = 10,
+                                    holdMs = holdMs.toLongOrNull()?.coerceAtLeast(10) ?: 40,
                                     repeatCount = repeats.toIntOrNull() ?: 0,
                                     stopConditionType = stopConditionType,
                                     stopDurationAmount = stopDurationAmount.toLongOrNull() ?: 10L,
@@ -418,7 +418,7 @@ fun AreaTapScreen(
             Button(
                 onClick = {
                     val finalInt = intervalMs.toLongOrNull()?.coerceAtLeast(10) ?: 400
-                    val finalHold = 10L
+                    val finalHold = holdMs.toLongOrNull()?.coerceAtLeast(10) ?: 40L
 
                     viewModel.activeAreaTapPreset = Preset(
                         name = bActivePresetName,
