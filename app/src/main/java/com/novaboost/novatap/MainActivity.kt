@@ -195,13 +195,13 @@ fun MainLayout(viewModel: MainViewModel) {
                 }
             }
 
-            // Limit Exceeded Dialog Modal Popup overlay (Strict Monetization Rules)
+            // Warmup free-trial limit popup
             if (viewModel.displayLimitDialog) {
                 AlertDialog(
                     onDismissRequest = { viewModel.displayLimitDialog = false },
                     title = {
                         Text(
-                            text = if (isRu) "Дневной лимит кликов исчерпан" else "Daily click limit reached",
+                            text = if (isRu) "Тестовый лимит прогрева достигнут" else "Warmup Trial Limit Reached",
                             fontWeight = FontWeight.Bold,
                             color = MaterialTheme.colorScheme.primary
                         )
@@ -209,32 +209,15 @@ fun MainLayout(viewModel: MainViewModel) {
                     text = {
                         Text(
                             text = if (isRu) {
-                                "Вы использовали свободные 50 000 кликов на сегодня. Отключите лимиты навсегда или посмотрите короткое видео, чтобы получить еще +10 000 кликов!"
+                                "В бесплатной версии режим прогрева доступен в тесте: до 10 свайпов в сутки. Перейдите на Premium для полной скорости и всех функций прогрева."
                             } else {
-                                "You have reached your daily limit of 50,000 interactions. To unlock unlimited inputs, remove ads, or watch a video to extend limits by +10,000."
+                                "Free mode includes warmup as a trial with up to 10 swipes per day. Upgrade to Premium for full speed and advanced warmup features."
                             },
                             style = MaterialTheme.typography.bodyMedium
                         )
                     },
                     confirmButton = {
                         Button(
-                            onClick = {
-                                viewModel.rewardUserByAd(context)
-                            },
-                            colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF10B981)),
-                            shape = RoundedCornerShape(8.dp)
-                        ) {
-                            Row(
-                                verticalAlignment = Alignment.CenterVertically,
-                                horizontalArrangement = Arrangement.spacedBy(6.dp)
-                            ) {
-                                Icon(imageVector = Icons.Default.SmartDisplay, contentDescription = "Watch Ad")
-                                Text(if (isRu) "Смотреть Рекламу (+10к)" else "Watch Video Ad (+10k)")
-                            }
-                        }
-                    },
-                    dismissButton = {
-                        TextButton(
                             onClick = {
                                 val activity = context as? android.app.Activity
                                 if (activity != null) {
@@ -243,10 +226,27 @@ fun MainLayout(viewModel: MainViewModel) {
                                     viewModel.removeAdsService()
                                 }
                                 viewModel.displayLimitDialog = false
+                            },
+                            colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF10B981)),
+                            shape = RoundedCornerShape(8.dp)
+                        ) {
+                            Row(
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.spacedBy(6.dp)
+                            ) {
+                                Icon(imageVector = Icons.Default.WorkspacePremium, contentDescription = "Premium")
+                                Text(if (isRu) "Перейти на Premium" else "Upgrade to Premium")
+                            }
+                        }
+                    },
+                    dismissButton = {
+                        TextButton(
+                            onClick = {
+                                viewModel.displayLimitDialog = false
                             }
                         ) {
                             Text(
-                                text = if (isRu) "Купить подписку (Убрать рекламу)" else "Remove Ads Subscription",
+                                text = if (isRu) "Позже" else "Later",
                                 fontWeight = FontWeight.Bold,
                                 color = MaterialTheme.colorScheme.secondary
                             )

@@ -36,20 +36,22 @@ fun SingleTapScreen(
     val scrollState = rememberScrollState()
 
     val isRu = viewModel.selectedLanguage == "ru"
+    val isPremium = viewModel.isAdFreeUser
+    val minIntervalMs = if (isPremium) MainViewModel.MIN_INTERVAL_MS else MainViewModel.MIN_SINGLE_INTERVAL_FREE_MS
 
     // Controller states linked to model preset values
     var presetName by remember { mutableStateOf("My Single Preset") }
     var inputX by remember { mutableStateOf("500") }
     var inputY by remember { mutableStateOf("1000") }
-    var intervalMs by remember { mutableStateOf("200") }
-    var holdMs by remember { mutableStateOf("40") }
+    var intervalMs by remember { mutableStateOf(if (isPremium) "40" else "100") }
+    var holdMs by remember { mutableStateOf("5") }
     var repeats by remember { mutableStateOf("100") }
     var stopConditionType by remember { mutableStateOf("infinite") } // "infinite", "duration", "clicks"
     var stopDurationAmount by remember { mutableStateOf("10") }
     var stopDurationUnit by remember { mutableStateOf("seconds") } // "seconds", "minutes", "hours"
     var humanTouch by remember { mutableStateOf(false) }
-    var microOffset by remember { mutableStateOf(10f) }
-    var randomInterval by remember { mutableStateOf(15f) }
+    var microOffset by remember { mutableStateOf(50f) }
+    var randomInterval by remember { mutableStateOf(40f) }
     var randomHold by remember { mutableStateOf(5f) }
 
     var showSafetyWarning by remember { mutableStateOf(false) }
@@ -57,13 +59,13 @@ fun SingleTapScreen(
     LaunchedEffect(viewModel.activeSingleTapPreset) {
         val preset = viewModel.activeSingleTapPreset
         presetName = preset.name
-        intervalMs = preset.intervalMs.toString()
-        holdMs = "40"
+        intervalMs = preset.intervalMs.coerceAtLeast(minIntervalMs).toString()
+        holdMs = preset.holdMs.toString()
         repeats = preset.repeatCount.toString()
         stopConditionType = preset.stopConditionType
         stopDurationAmount = preset.stopDurationAmount.toString()
         stopDurationUnit = preset.stopDurationUnit
-        humanTouch = preset.humanTouchEnabled
+        humanTouch = if (isPremium) preset.humanTouchEnabled else false
         microOffset = preset.microOffsetPx.toFloat()
         randomInterval = preset.randomIntervalRange.toFloat()
         randomHold = preset.randomHoldRange.toFloat()
@@ -71,10 +73,19 @@ fun SingleTapScreen(
         inputY = preset.zonesJson.ifEmpty { "1000" }
     }
 
+    LaunchedEffect(isPremium) {
+        if (!isPremium) {
+            humanTouch = false
+            if ((intervalMs.toLongOrNull() ?: 0L) in 1 until minIntervalMs) {
+                intervalMs = minIntervalMs.toString()
+            }
+        }
+    }
+
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text(if (isRu) "Одиночное нажатие" else "Single Tap Mode") },
+                title = { Text(if (isRu) "Лайки" else "Likes") },
                 navigationIcon = {
                     IconButton(onClick = onBack) {
                         Icon(imageVector = Icons.Default.ArrowBack, contentDescription = "Back")
@@ -126,14 +137,14 @@ fun SingleTapScreen(
                     )
                     Column {
                         Text(
-                            text = if (isRu) "Без лишних координат" else "No Coordinates Needed",
+                            text = if (isRu) "Лайки в точку" else "Point Likes",
                             style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold)
                         )
                         Text(
                             text = if (isRu) {
-                                "Просто задайте интервал задержки, нажмите кнопку ниже и перетащите появившуюся точку кликера в любое место на экране."
+                                "Выберите точку лайка на экране TikTok и задайте интервал. Режим имитирует стабильную серию лайков в одном месте."
                             } else {
-                                "Set timings below, click launch, and drag the visual clicker point directly on top of your target app."
+                                "Pick one TikTok like point and set your timing. This mode runs repeated likes on a single selected spot."
                             },
                             style = MaterialTheme.typography.bodySmall,
                             color = MaterialTheme.colorScheme.onSurfaceVariant
@@ -155,7 +166,7 @@ fun SingleTapScreen(
                 onValueChange = {
                     intervalMs = it
                     val num = it.toLongOrNull() ?: 0
-                    showSafetyWarning = num < 40 && num > 0
+                    showSafetyWarning = num < minIntervalMs && num > 0
                 },
                 label = { Text(if (isRu) "Интервал (мс)" else "Interval (ms)") },
                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
@@ -172,7 +183,7 @@ fun SingleTapScreen(
                         .padding(12.dp)
                 ) {
                     Text(
-                        text = if (isRu) "Минимальный интервал защиты экрана составляет 40 мс!" else "Minimum safety filter threshold is 40ms!",
+                        text = if (isRu) "Минимальный интервал для вашего тарифа: ${minIntervalMs} мс." else "Minimum interval for your plan is ${minIntervalMs}ms.",
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.error,
                         fontWeight = FontWeight.SemiBold
@@ -220,11 +231,21 @@ fun SingleTapScreen(
 
                         Switch(
                             checked = humanTouch,
-                            onCheckedChange = { humanTouch = it }
+                            onCheckedChange = { if (isPremium) humanTouch = it },
+                            enabled = isPremium
                         )
                     }
 
-                    if (humanTouch) {
+                    if (!isPremium) {
+                        Spacer(modifier = Modifier.height(8.dp))
+                        Text(
+                            text = if (isRu) "Human Touch доступен только в Premium: улучшенная естественность нажатий и дополнительные параметры." else "Human Touch is Premium-only: natural-like behavior and advanced tuning.",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.7f)
+                        )
+                    }
+
+                    if (isPremium && humanTouch) {
                         Spacer(modifier = Modifier.height(12.dp))
                         Text(
                             text = if (isRu) {
@@ -335,15 +356,15 @@ fun SingleTapScreen(
                             onClick = {
                                 val activeVal = viewModel.activeSingleTapPreset.copy(
                                     name = presetName,
-                                    intervalMs = intervalMs.toLongOrNull()?.coerceAtLeast(10) ?: 200,
-                                    holdMs = 10,
+                                    intervalMs = intervalMs.toLongOrNull()?.coerceAtLeast(minIntervalMs) ?: minIntervalMs,
+                                    holdMs = holdMs.toLongOrNull()?.coerceAtLeast(MainViewModel.MIN_HOLD_MS) ?: MainViewModel.MIN_HOLD_MS,
                                     repeatCount = repeats.toIntOrNull() ?: 0,
                                     stopConditionType = stopConditionType,
                                     stopDurationAmount = stopDurationAmount.toLongOrNull() ?: 10L,
                                     stopDurationUnit = stopDurationUnit,
                                     pointsJson = inputX,
                                     zonesJson = inputY,
-                                    humanTouchEnabled = humanTouch,
+                                    humanTouchEnabled = isPremium && humanTouch,
                                     microOffsetPx = microOffset.toInt(),
                                     randomIntervalRange = randomInterval.toInt(),
                                     randomHoldRange = randomHold.toInt()
@@ -373,8 +394,8 @@ fun SingleTapScreen(
             val isActive = viewModel.isAutomationActive
             Button(
                 onClick = {
-                    val finalInt = intervalMs.toLongOrNull()?.coerceAtLeast(10) ?: 200
-                    val finalHold = 10L
+                    val finalInt = intervalMs.toLongOrNull()?.coerceAtLeast(minIntervalMs) ?: minIntervalMs
+                    val finalHold = holdMs.toLongOrNull()?.coerceAtLeast(MainViewModel.MIN_HOLD_MS) ?: MainViewModel.MIN_HOLD_MS
 
                     viewModel.activeSingleTapPreset = Preset(
                         name = presetName,
@@ -387,7 +408,7 @@ fun SingleTapScreen(
                         stopDurationUnit = stopDurationUnit,
                         pointsJson = inputX,
                         zonesJson = inputY,
-                        humanTouchEnabled = humanTouch,
+                        humanTouchEnabled = isPremium && humanTouch,
                         microOffsetPx = microOffset.toInt(),
                         randomIntervalRange = randomInterval.toInt(),
                         randomHoldRange = randomHold.toInt()

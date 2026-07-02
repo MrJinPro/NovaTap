@@ -42,7 +42,6 @@ fun DashboardScreen(
     val scrollState = rememberScrollState()
 
     val todayUsage by viewModel.todayUsageActions.collectAsState()
-    val remaining = viewModel.getRemainingActions()
     val isPremium = viewModel.isAdFreeUser
 
     val isRu = viewModel.selectedLanguage == "ru"
@@ -76,7 +75,7 @@ fun DashboardScreen(
                     )
                 )
                 Text(
-                    text = if (isRu) "СИМУЛЯТОР НАЖАТИЙ v4.0" else "HUMAN TOUCH ENGINE v4.0",
+                    text = if (isRu) "TIKTOK AUTOMATION SUITE" else "TIKTOK AUTOMATION SUITE",
                     style = MaterialTheme.typography.labelSmall.copy(
                         fontFamily = FontFamily.Monospace,
                         fontWeight = FontWeight.Medium,
@@ -184,7 +183,7 @@ fun DashboardScreen(
                                     color = Color.White
                                 )
                                 Text(
-                                    text = if (isPremium) "/ ∞" else "/ 50K",
+                                    text = if (isRu) "действий" else "actions",
                                     style = MaterialTheme.typography.labelLarge,
                                     color = Color.White.copy(alpha = 0.4f),
                                     modifier = Modifier.padding(bottom = 6.dp)
@@ -211,7 +210,7 @@ fun DashboardScreen(
                     Spacer(modifier = Modifier.height(16.dp))
 
                     // Progress Bar
-                    val progressPct = if (isPremium) 1.0f else (todayUsage.toFloat() / 50000f).coerceIn(0f, 1f)
+                    val progressPct = 1.0f
                     Box(
                         modifier = Modifier
                             .fillMaxWidth()
@@ -234,7 +233,6 @@ fun DashboardScreen(
 
                     Spacer(modifier = Modifier.height(12.dp))
 
-                    val reachedSoon = !isPremium && viewModel.getRemainingActions() < 10000
                     Row(
                         modifier = Modifier.fillMaxWidth(),
                         horizontalArrangement = Arrangement.SpaceBetween,
@@ -242,33 +240,18 @@ fun DashboardScreen(
                     ) {
                         Text(
                             text = if (isPremium) {
-                                if (isRu) "БЕЗЛИМИТНЫЙ ДОСТУП АКТИВЕН" else "UNLIMITED INTERACTIONS ACTIVE"
-                            } else if (reachedSoon) {
-                                if (isRu) "ДНЕВНОЙ ЛИМИТ ПОЧТИ ИСЧЕРПАН" else "DAILY LIMIT REACHED SOON"
+                                if (isRu) "PREMIUM: МАКСИМАЛЬНАЯ ПРОИЗВОДИТЕЛЬНОСТЬ" else "PREMIUM: MAX PERFORMANCE"
                             } else {
-                                if (isRu) "СТАБИЛЬНОСТЬ СИСТЕМЫ ОТЛИЧНАЯ" else "LIMIT STABILITY CODES OK"
+                                if (isRu) "FREE: БАЗОВЫЙ РЕЖИМ" else "FREE: BASIC MODE"
                             },
                             style = MaterialTheme.typography.labelSmall.copy(
                                 fontWeight = FontWeight.Bold,
                                 letterSpacing = 0.5.sp
                             ),
-                            color = if (reachedSoon) AlertRed else Color.White.copy(alpha = 0.4f)
+                            color = Color.White.copy(alpha = 0.55f)
                         )
 
-                        if (!isPremium) {
-                            Text(
-                                text = if (isRu) "+10К ЗА ПРОСМОТР" else "+10K WITH AD",
-                                style = MaterialTheme.typography.labelSmall.copy(
-                                    fontWeight = FontWeight.Bold,
-                                    letterSpacing = 0.5.sp
-                                ),
-                                color = CyberBlue,
-                                modifier = Modifier
-                                    .clip(RoundedCornerShape(4.dp))
-                                    .clickable { viewModel.rewardUserByAd(context) }
-                                    .padding(horizontal = 4.dp, vertical = 2.dp)
-                            )
-                        }
+                        Spacer(modifier = Modifier.width(4.dp))
                     }
                 }
             }
@@ -290,10 +273,10 @@ fun DashboardScreen(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.spacedBy(12.dp)
             ) {
-                // Card 1: Single Tap
+                // Card 1: Likes
                 ModuleGridCard(
-                    title = if (isRu) "Одиночное" else "Single Tap",
-                    subtitle = if (isRu) "1 точка" else "1 Static point",
+                    title = if (isRu) "Лайки" else "Likes",
+                    subtitle = if (isRu) "1 точка лайка" else "One like point",
                     icon = Icons.Default.AdsClick,
                     accentColor = CyberBlue,
                     isFlagship = false,
@@ -331,10 +314,10 @@ fun DashboardScreen(
                     modifier = Modifier.weight(1f)
                 )
 
-                // Card 4: Swipe
+                // Card 4: Feed Warmup
                 ModuleGridCard(
-                    title = if (isRu) "Свайп" else "Swipe",
-                    subtitle = if (isRu) "Жесты" else "Custom paths",
+                    title = if (isRu) "Прогрев" else "Warmup",
+                    subtitle = if (isRu) "Лента TikTok" else "TikTok feed",
                     icon = Icons.Default.Swipe,
                     accentColor = Color(0xFFFFB74D),
                     isFlagship = false,
@@ -442,27 +425,14 @@ fun DashboardScreen(
                     .height(60.dp)
                     .clip(RoundedCornerShape(16.dp))
                     .border(BorderStroke(1.dp, Color(0x1FFFFFFF)), RoundedCornerShape(16.dp))
-                    .background(Color(0x0AFFFFFF))
-                    .clickable { viewModel.rewardUserByAd(context) },
+                    .background(Color(0x0AFFFFFF)),
                 contentAlignment = Alignment.Center
             ) {
-                Row(
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(8.dp),
-                    modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp)
-                ) {
-                    Icon(
-                        imageVector = Icons.Outlined.HelpOutline,
-                        contentDescription = "Ads",
-                        tint = CyberBlue,
-                        modifier = Modifier.size(18.dp)
-                    )
-                    Text(
-                        text = if (isRu) "Нажмите, чтобы бесплатно получить +10k кликов" else "Click to claim free +10k clicks",
-                        style = MaterialTheme.typography.bodySmall.copy(fontWeight = FontWeight.Medium),
-                        color = CyberBlue
-                    )
-                }
+                Text(
+                    text = if (isRu) "Premium: выше скорость, Human Touch и расширенный Прогрев" else "Premium: higher speed, Human Touch, and advanced Warmup",
+                    style = MaterialTheme.typography.bodySmall.copy(fontWeight = FontWeight.Medium),
+                    color = CyberBlue
+                )
             }
         }
     }

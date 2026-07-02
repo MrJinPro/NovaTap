@@ -3,6 +3,7 @@ package com.novaboost.novatap.ui.screens
 import android.content.Context
 import android.content.Intent
 import android.net.Uri
+import android.os.Build
 import android.provider.Settings
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
@@ -35,12 +36,19 @@ fun OnboardingScreen(
     onFinish: () -> Unit
 ) {
     val context = LocalContext.current
+    val isXiaomiDevice = remember {
+        val manufacturer = Build.MANUFACTURER.lowercase()
+        val brand = Build.BRAND.lowercase()
+        manufacturer.contains("xiaomi") || manufacturer.contains("redmi") || manufacturer.contains("poco") ||
+                brand.contains("xiaomi") || brand.contains("redmi") || brand.contains("poco")
+    }
     var currentStep by remember {
         mutableStateOf(
             if (!viewModel.isAccessibilityGranted) 0
             else if (!viewModel.isOverlayGranted) 2
             else if (!viewModel.isBatteryExempted) 3
-            else 4
+            else if (isXiaomiDevice) 4
+            else 5
         )
     }
     val isRu = viewModel.selectedLanguage == "ru"
@@ -70,6 +78,30 @@ fun OnboardingScreen(
                 android.util.Log.e("NovaTapOnboarding", "[Permission] Critical fallback list trigger error.", ex)
                 viewModel.logException(ex, "OnboardingOpenNotificationSettingsFallback")
             }
+        }
+    }
+
+    val openAutostartSettingsAction = {
+        val candidates = listOf(
+            Intent().setClassName("com.miui.securitycenter", "com.miui.permcenter.autostart.AutoStartManagementActivity"),
+            Intent("miui.intent.action.OP_AUTO_START").setPackage("com.miui.securitycenter"),
+            Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS).apply {
+                data = Uri.fromParts("package", context.packageName, null)
+            }
+        )
+        var launched = false
+        for (intent in candidates) {
+            try {
+                intent.flags = Intent.FLAG_ACTIVITY_NEW_TASK
+                context.startActivity(intent)
+                launched = true
+                break
+            } catch (_: Exception) {
+                // Try next intent.
+            }
+        }
+        if (!launched) {
+            viewModel.logException(IllegalStateException("Failed to open autostart settings intents"), "OnboardingOpenAutostart")
         }
     }
 
@@ -111,7 +143,7 @@ fun OnboardingScreen(
 
     // Auto check loop in background to automatically detect user return with granted permissions
     LaunchedEffect(Unit) {
-        while (currentStep <= 4) {
+        while (currentStep <= 5) {
             try {
                 viewModel.checkAllPermissions(context)
             } catch (e: Exception) {
@@ -123,7 +155,7 @@ fun OnboardingScreen(
     }
 
     // Advanced-step synchronization on permission collection change
-    LaunchedEffect(viewModel.isAccessibilityGranted, viewModel.isOverlayGranted, viewModel.isBatteryExempted, viewModel.isNotificationGranted) {
+    LaunchedEffect(viewModel.isAccessibilityGranted, viewModel.isOverlayGranted, viewModel.isBatteryExempted, viewModel.isNotificationGranted, isXiaomiDevice) {
         if (!viewModel.isAccessibilityGranted) {
             if (currentStep != 0 && currentStep != 1) {
                 currentStep = 0
@@ -132,8 +164,10 @@ fun OnboardingScreen(
             currentStep = 2
         } else if (!viewModel.isBatteryExempted) {
             currentStep = 3
-        } else if (!viewModel.isNotificationGranted) {
+        } else if (isXiaomiDevice && currentStep < 4) {
             currentStep = 4
+        } else if (!viewModel.isNotificationGranted) {
+            currentStep = 5
         } else {
             onFinish()
         }
@@ -170,7 +204,7 @@ fun OnboardingScreen(
                 Spacer(modifier = Modifier.height(8.dp))
                 
                 Text(
-                    text = if (isRu) "Шаг $currentStep из 4" else "Step $currentStep of 4",
+                    text = if (isRu) "Шаг $currentStep из 5" else "Step $currentStep of 5",
                     style = MaterialTheme.typography.titleMedium,
                     fontWeight = FontWeight.Black,
                     color = MaterialTheme.colorScheme.onBackground
@@ -186,7 +220,7 @@ fun OnboardingScreen(
                     horizontalArrangement = Arrangement.spacedBy(8.dp),
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    for (i in 1..4) {
+                    for (i in 1..5) {
                         Box(
                             modifier = Modifier
                                 .weight(1f)
@@ -277,9 +311,18 @@ fun OnboardingScreen(
                         )
                     }
                     4 -> {
+                        OemCompatibilityStepLayout(
+                            isRu = isRu,
+                            isXiaomiDevice = isXiaomiDevice,
+                            onEnableCompatibilityMode = { viewModel.toggleCompatibilityMode(true) },
+                            onOpenAutostart = openAutostartSettingsAction,
+                            onOpenAppSettings = openSettingsAction
+                        )
+                    }
+                    5 -> {
                         StepLayout(
                             icon = Icons.Default.NotificationsActive,
-                            title = if (isRu) "Шаг 4: Разрешение на уведомления" else "Step 4: Notification Permission",
+                            title = if (isRu) "Шаг 5: Разрешение на уведомления" else "Step 5: Notification Permission",
                             explanation = if (isRu) {
                                 "Нам необходимо разрешение на показ уведомлений, чтобы отображать статус выполнения автоматизации в статус-баре."
                             } else {
@@ -429,6 +472,89 @@ fun OnboardingScreen(
                 }
             }
         )
+    }
+}
+
+@Composable
+fun OemCompatibilityStepLayout(
+    isRu: Boolean,
+    isXiaomiDevice: Boolean,
+    onEnableCompatibilityMode: () -> Unit,
+    onOpenAutostart: () -> Unit,
+    onOpenAppSettings: () -> Unit
+) {
+    Card(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 12.dp),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+        shape = RoundedCornerShape(16.dp),
+        elevation = CardDefaults.cardElevation(4.dp)
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(24.dp),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.spacedBy(12.dp)
+        ) {
+            Icon(
+                imageVector = Icons.Default.Tune,
+                contentDescription = null,
+                tint = MaterialTheme.colorScheme.primary,
+                modifier = Modifier.size(36.dp)
+            )
+
+            Text(
+                text = if (isRu) "Шаг 4: Совместимость устройства" else "Step 4: Device Compatibility",
+                style = MaterialTheme.typography.titleMedium,
+                fontWeight = FontWeight.Bold,
+                textAlign = TextAlign.Center
+            )
+
+            Text(
+                text = if (isRu) {
+                    if (isXiaomiDevice) {
+                        "На Xiaomi/Redmi/Poco часть нажатий может блокироваться системой. Включите режим совместимости и разрешите автозапуск в MIUI для стабильной работы."
+                    } else {
+                        "Для некоторых оболочек Android полезно включить режим совместимости и проверить фоновые ограничения приложения."
+                    }
+                } else {
+                    if (isXiaomiDevice) {
+                        "On Xiaomi/Redmi/Poco, some taps can be blocked by system policies. Enable compatibility mode and grant MIUI autostart for stable automation."
+                    } else {
+                        "On some Android skins, enabling compatibility mode and checking app background restrictions improves reliability."
+                    }
+                },
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.75f),
+                textAlign = TextAlign.Center
+            )
+
+            Button(
+                onClick = onEnableCompatibilityMode,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(48.dp),
+                shape = RoundedCornerShape(12.dp)
+            ) {
+                Text(if (isRu) "ВКЛЮЧИТЬ РЕЖИМ СОВМЕСТИМОСТИ" else "ENABLE COMPATIBILITY MODE")
+            }
+
+            OutlinedButton(
+                onClick = onOpenAutostart,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(48.dp),
+                shape = RoundedCornerShape(12.dp)
+            ) {
+                Text(if (isRu) "ОТКРЫТЬ АВТОЗАПУСК/БЕЗОПАСНОСТЬ" else "OPEN AUTOSTART/SECURITY")
+            }
+
+            TextButton(onClick = onOpenAppSettings) {
+                Text(if (isRu) "Открыть настройки приложения" else "Open app settings")
+            }
+        }
     }
 }
 
@@ -751,18 +877,18 @@ fun AccessibilityDisclosureLayout(
 
                 val features = if (isRu) {
                     listOf(
-                        "Одиночные касания",
+                        "Лайки в точку",
                         "Множественные касания",
                         "Smart Zones",
-                        "Автоматические свайпы",
+                        "Прогрев ленты",
                         "Сценарии автоматизации"
                     )
                 } else {
                     listOf(
-                        "Single Tap",
+                        "Point Likes",
                         "Multi Tap",
                         "Smart Zones",
-                        "Swipe Automation",
+                        "Feed Warmup",
                         "Automation Scenarios"
                     )
                 }

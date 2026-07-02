@@ -42,8 +42,8 @@ fun MultiTapScreen(
     val isRu = viewModel.selectedLanguage == "ru"
 
     var presetName by remember { mutableStateOf("My Multi Preset") }
-    var intervalMs by remember { mutableStateOf("300") }
-    var holdMs by remember { mutableStateOf("50") }
+    var intervalMs by remember { mutableStateOf("40") }
+    var holdMs by remember { mutableStateOf("10") }
     var repeats by remember { mutableStateOf("100") }
     var stopConditionType by remember { mutableStateOf("infinite") } // "infinite", "duration", "clicks"
     var stopDurationAmount by remember { mutableStateOf("10") }
@@ -340,8 +340,8 @@ fun MultiTapScreen(
                             onClick = {
                                 val activeVal = viewModel.activeMultiTapPreset.copy(
                                     name = presetName,
-                                    intervalMs = 300,
-                                    holdMs = 50,
+                                    intervalMs = intervalMs.toLongOrNull()?.coerceAtLeast(MainViewModel.MIN_INTERVAL_MS) ?: MainViewModel.MIN_INTERVAL_MS,
+                                    holdMs = holdMs.toLongOrNull()?.coerceAtLeast(MainViewModel.MIN_HOLD_MS) ?: MainViewModel.MULTI_DEFAULT_HOLD_MS,
                                     repeatCount = repeats.toIntOrNull() ?: 0,
                                     stopConditionType = stopConditionType,
                                     stopDurationAmount = stopDurationAmount.toLongOrNull() ?: 10L,
@@ -373,8 +373,8 @@ fun MultiTapScreen(
             val isActive = viewModel.isAutomationActive
             Button(
                 onClick = {
-                    val finalInt = 300L
-                    val finalHold = 50L
+                    val finalInt = intervalMs.toLongOrNull()?.coerceAtLeast(MainViewModel.MIN_INTERVAL_MS) ?: MainViewModel.MIN_INTERVAL_MS
+                    val finalHold = holdMs.toLongOrNull()?.coerceAtLeast(MainViewModel.MIN_HOLD_MS) ?: MainViewModel.MULTI_DEFAULT_HOLD_MS
 
                     viewModel.activeMultiTapPreset = Preset(
                         name = presetName,
@@ -490,8 +490,8 @@ fun MultiTapScreen(
             confirmButton = {
                 Button(
                     onClick = {
-                        val d = tempDelay.toLongOrNull()?.coerceAtLeast(10) ?: 300L
-                        val h = tempHold.toLongOrNull()?.coerceAtLeast(10) ?: 50L
+                        val d = tempDelay.toLongOrNull()?.coerceAtLeast(MainViewModel.MIN_INTERVAL_MS) ?: MainViewModel.MIN_INTERVAL_MS
+                        val h = tempHold.toLongOrNull()?.coerceAtLeast(MainViewModel.MIN_HOLD_MS) ?: MainViewModel.MULTI_DEFAULT_HOLD_MS
                         viewModel.updateMultiTapPointTimings(point.id, d, h)
                         activeEditPoint = null
                     }

@@ -42,19 +42,26 @@ fun SwipeScreen(
 
     val isRu = viewModel.selectedLanguage == "ru"
 
-    var bActivePresetName by remember { mutableStateOf("My Swipe Preset") }
-    var intervalMs by remember { mutableStateOf("1000") }
-    var swipeDurationMs by remember { mutableStateOf("300") }
+    var bActivePresetName by remember { mutableStateOf("Feed Warmup Preset") }
+    var intervalMs by remember { mutableStateOf("5000") }
+    var swipeDurationMs by remember { mutableStateOf("100") }
     var repeats by remember { mutableStateOf("100") }
     var stopConditionType by remember { mutableStateOf("infinite") } // "infinite", "duration", "clicks"
     var stopDurationAmount by remember { mutableStateOf("10") }
     var stopDurationUnit by remember { mutableStateOf("seconds") } // "seconds", "minutes", "hours"
-    var pathHumanized by remember { mutableStateOf(true) }
+    val isPremium = viewModel.isAdFreeUser
+    var pathHumanized by remember { mutableStateOf(false) }
+
+    var randomLikesEnabled by remember { mutableStateOf(false) }
+    var randomLikesMinVideos by remember { mutableStateOf(MainViewModel.WARMUP_RANDOM_LIKES_MIN.toString()) }
+    var randomLikesMaxVideos by remember { mutableStateOf(MainViewModel.WARMUP_RANDOM_LIKES_MAX.toString()) }
+    var randomLikesTapGapMs by remember { mutableStateOf(MainViewModel.WARMUP_RANDOM_LIKES_TAP_GAP_MS.toString()) }
+    var randomLikesPostDelayMs by remember { mutableStateOf(MainViewModel.WARMUP_RANDOM_LIKES_POST_DELAY_MS.toString()) }
 
     // Swipe coordinates
-    var startX by remember { mutableStateOf(200f) }
+    var startX by remember { mutableStateOf(400f) }
     var startY by remember { mutableStateOf(800f) }
-    var endX by remember { mutableStateOf(800f) }
+    var endX by remember { mutableStateOf(400f) }
     var endY by remember { mutableStateOf(200f) }
 
     // Init from active state
@@ -67,7 +74,13 @@ fun SwipeScreen(
         stopConditionType = preset.stopConditionType
         stopDurationAmount = preset.stopDurationAmount.toString()
         stopDurationUnit = preset.stopDurationUnit
-        pathHumanized = preset.humanTouchEnabled
+        pathHumanized = if (isPremium) preset.humanTouchEnabled else false
+
+        randomLikesEnabled = viewModel.warmupRandomLikesEnabled
+        randomLikesMinVideos = viewModel.warmupRandomLikesMinVideos.toString()
+        randomLikesMaxVideos = viewModel.warmupRandomLikesMaxVideos.toString()
+        randomLikesTapGapMs = viewModel.warmupRandomLikesTapGapMs.toString()
+        randomLikesPostDelayMs = viewModel.warmupRandomLikesPostDelayMs.toString()
 
         startX = viewModel.swipeCoordinates.startX
         startY = viewModel.swipeCoordinates.startY
@@ -75,10 +88,17 @@ fun SwipeScreen(
         endY = viewModel.swipeCoordinates.endY
     }
 
+    LaunchedEffect(isPremium) {
+        if (!isPremium) {
+            pathHumanized = false
+            randomLikesEnabled = false
+        }
+    }
+
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text(if (isRu) "Свайп-эффекты" else "Swipe Gestures") },
+                title = { Text(if (isRu) "Прогрев ленты" else "Feed Warmup") },
                 navigationIcon = {
                     IconButton(onClick = onBack) {
                         Icon(imageVector = Icons.Default.ArrowBack, contentDescription = "Back")
@@ -130,14 +150,14 @@ fun SwipeScreen(
                     )
                     Column {
                         Text(
-                            text = if (isRu) "Линейные прокрутки экрана" else "Linear Screen Swiping Gests",
+                            text = if (isRu) "Прогрев аккаунта TikTok" else "TikTok Account Warmup",
                             style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold)
                         )
                         Text(
                             text = if (isRu) {
-                                "Задайте время проведения за пальцем, нажмите на кнопку оверлея ниже и расположите узлы начала (S) и конца (E) визуально."
+                                "Режим имитирует естественный просмотр ленты: свайпы, паузы и поведенческие паттерны."
                             } else {
-                                "Configure duration and path in dynamic overlay workspace by visually manipulating start (S) and ending (E) handle pegs."
+                                "This mode simulates natural feed browsing with swipe timing and behavioral pacing."
                             },
                             style = MaterialTheme.typography.bodySmall,
                             color = MaterialTheme.colorScheme.onSurfaceVariant
@@ -146,10 +166,26 @@ fun SwipeScreen(
                 }
             }
 
+            if (!isPremium) {
+                Card(colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.3f))) {
+                    Column(modifier = Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                        Text(
+                            text = if (isRu) "Тестовый режим Free" else "Free Trial Mode",
+                            style = MaterialTheme.typography.titleSmall,
+                            fontWeight = FontWeight.Bold
+                        )
+                        Text(
+                            text = if (isRu) "Доступно свайпов сегодня: ${viewModel.getRemainingWarmupSwipes()} из 10." else "Warmup swipes left today: ${viewModel.getRemainingWarmupSwipes()} of 10.",
+                            style = MaterialTheme.typography.bodySmall
+                        )
+                    }
+                }
+            }
+
             // ONLY ENFORCE CANVAS WORKSPACE INSIDE EXPERT MODE SCREEN
             if (viewModel.isExpertMode) {
                 Text(
-                    text = if (isRu) "Режим эксперта: Интерактивный эскиз" else "Expert Mode: Dynamic Gestures Sketcher",
+                    text = if (isRu) "Режим эксперта: Траектория прогрева" else "Expert Mode: Warmup Trajectory",
                     style = MaterialTheme.typography.titleMedium,
                     fontWeight = FontWeight.Bold,
                     color = MaterialTheme.colorScheme.secondary
@@ -211,7 +247,7 @@ fun SwipeScreen(
                 ) {
                     OutlinedTextField(
                         value = startX.roundToInt().toString(),
-                        onValueChange = { startX = it.toFloatOrNull() ?: 200f },
+                        onValueChange = { startX = it.toFloatOrNull() ?: 400f },
                         label = { Text("Start X (px)") },
                         keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                         modifier = Modifier.weight(1f)
@@ -232,7 +268,7 @@ fun SwipeScreen(
                 ) {
                     OutlinedTextField(
                         value = endX.roundToInt().toString(),
-                        onValueChange = { endX = it.toFloatOrNull() ?: 800f },
+                        onValueChange = { endX = it.toFloatOrNull() ?: 400f },
                         label = { Text("End X (px)") },
                         keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                         modifier = Modifier.weight(1f)
@@ -250,7 +286,7 @@ fun SwipeScreen(
 
             // TIMINGS
             Text(
-                text = if (isRu) "Временные настройки жеста" else "Timing Configurations",
+                text = if (isRu) "Параметры прогрева" else "Warmup Timing",
                 style = MaterialTheme.typography.titleMedium,
                 fontWeight = FontWeight.Bold,
                 color = MaterialTheme.colorScheme.primary
@@ -263,7 +299,7 @@ fun SwipeScreen(
                 OutlinedTextField(
                     value = intervalMs,
                     onValueChange = { intervalMs = it },
-                    label = { Text(if (isRu) "Пауза между (мс)" else "Pause Interval (ms)") },
+                    label = { Text(if (isRu) "Пауза между видео (мс)" else "Pause Between Videos (ms)") },
                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                     modifier = Modifier.weight(1f),
                     shape = RoundedCornerShape(12.dp)
@@ -272,11 +308,79 @@ fun SwipeScreen(
                 OutlinedTextField(
                     value = swipeDurationMs,
                     onValueChange = { swipeDurationMs = it },
-                    label = { Text(if (isRu) "Длительность (мс)" else "Swipe Duration (ms)") },
+                    label = { Text(if (isRu) "Длительность свайпа (мс)" else "Swipe Duration (ms)") },
                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                     modifier = Modifier.weight(1f),
                     shape = RoundedCornerShape(12.dp)
                 )
+            }
+
+            Card(
+                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.35f)),
+                shape = RoundedCornerShape(16.dp)
+            ) {
+                Column(modifier = Modifier.padding(14.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Text(
+                            text = if (isRu) "Случайные лайки" else "Random Likes",
+                            style = MaterialTheme.typography.titleSmall,
+                            fontWeight = FontWeight.Bold
+                        )
+                        Switch(
+                            checked = randomLikesEnabled,
+                            onCheckedChange = { if (isPremium) randomLikesEnabled = it },
+                            enabled = isPremium
+                        )
+                    }
+
+                    if (!isPremium) {
+                        Text(
+                            text = if (isRu) "Функция доступна только в Premium. Во время прогрева выполняется естественный двойной тап по центру видео после случайного количества просмотров." else "Premium-only feature. During warmup, app performs a natural center double-tap after a random number of watched videos.",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f)
+                        )
+                    }
+
+                    if (isPremium && randomLikesEnabled) {
+                        Row(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.fillMaxWidth()) {
+                            OutlinedTextField(
+                                value = randomLikesMinVideos,
+                                onValueChange = { randomLikesMinVideos = it },
+                                label = { Text(if (isRu) "Мин. видео" else "Min videos") },
+                                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                                modifier = Modifier.weight(1f)
+                            )
+                            OutlinedTextField(
+                                value = randomLikesMaxVideos,
+                                onValueChange = { randomLikesMaxVideos = it },
+                                label = { Text(if (isRu) "Макс. видео" else "Max videos") },
+                                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                                modifier = Modifier.weight(1f)
+                            )
+                        }
+
+                        Row(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.fillMaxWidth()) {
+                            OutlinedTextField(
+                                value = randomLikesTapGapMs,
+                                onValueChange = { randomLikesTapGapMs = it },
+                                label = { Text(if (isRu) "Пауза между тапами (мс)" else "Tap gap (ms)") },
+                                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                                modifier = Modifier.weight(1f)
+                            )
+                            OutlinedTextField(
+                                value = randomLikesPostDelayMs,
+                                onValueChange = { randomLikesPostDelayMs = it },
+                                label = { Text(if (isRu) "Пауза после лайка (мс)" else "Post-like pause (ms)") },
+                                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                                modifier = Modifier.weight(1f)
+                            )
+                        }
+                    }
+                }
             }
 
             // Universal stop condition configuration (all modes)
@@ -308,19 +412,26 @@ fun SwipeScreen(
                         Button(
                             onClick = {
                                 viewModel.swipeCoordinates = SwipeCoordinates(startX, startY, endX, endY)
+                                viewModel.updateWarmupRandomLikes(
+                                    enabled = isPremium && randomLikesEnabled,
+                                    minVideos = randomLikesMinVideos.toIntOrNull() ?: MainViewModel.WARMUP_RANDOM_LIKES_MIN,
+                                    maxVideos = randomLikesMaxVideos.toIntOrNull() ?: MainViewModel.WARMUP_RANDOM_LIKES_MAX,
+                                    tapGapMs = randomLikesTapGapMs.toLongOrNull() ?: MainViewModel.WARMUP_RANDOM_LIKES_TAP_GAP_MS,
+                                    postDelayMs = randomLikesPostDelayMs.toLongOrNull() ?: MainViewModel.WARMUP_RANDOM_LIKES_POST_DELAY_MS
+                                )
                                 val activeVal = viewModel.activeSwipePreset.copy(
                                     name = bActivePresetName,
-                                    intervalMs = intervalMs.toLongOrNull()?.coerceAtLeast(100) ?: 1000,
-                                    holdMs = swipeDurationMs.toLongOrNull()?.coerceAtLeast(100) ?: 300,
+                                    intervalMs = intervalMs.toLongOrNull()?.coerceAtLeast(MainViewModel.MIN_INTERVAL_MS) ?: MainViewModel.MIN_INTERVAL_MS,
+                                    holdMs = swipeDurationMs.toLongOrNull()?.coerceAtLeast(MainViewModel.MIN_HOLD_MS) ?: MainViewModel.MIN_HOLD_MS,
                                     repeatCount = repeats.toIntOrNull() ?: 0,
                                     stopConditionType = stopConditionType,
                                     stopDurationAmount = stopDurationAmount.toLongOrNull() ?: 10L,
                                     stopDurationUnit = stopDurationUnit,
-                                    humanTouchEnabled = pathHumanized
+                                    humanTouchEnabled = isPremium && pathHumanized
                                 )
                                 viewModel.activeSwipePreset = activeVal
                                 viewModel.savePreset(bActivePresetName, "swipe")
-                                Toast.makeText(context, if (isRu) "Свайп сохранён!" else "Swipe preset committed!", Toast.LENGTH_SHORT).show()
+                                Toast.makeText(context, if (isRu) "Пресет прогрева сохранен!" else "Warmup preset saved!", Toast.LENGTH_SHORT).show()
                             },
                             modifier = Modifier.fillMaxWidth(),
                             colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.secondary)
@@ -343,8 +454,16 @@ fun SwipeScreen(
             val isActive = viewModel.isAutomationActive
             Button(
                 onClick = {
-                    val finalInt = intervalMs.toLongOrNull()?.coerceAtLeast(100) ?: 1000
-                    val finalSwipeDur = swipeDurationMs.toLongOrNull()?.coerceAtLeast(100) ?: 300
+                    val finalInt = intervalMs.toLongOrNull()?.coerceAtLeast(MainViewModel.MIN_INTERVAL_MS) ?: MainViewModel.MIN_INTERVAL_MS
+                    val finalSwipeDur = swipeDurationMs.toLongOrNull()?.coerceAtLeast(MainViewModel.MIN_HOLD_MS) ?: MainViewModel.MIN_HOLD_MS
+
+                    viewModel.updateWarmupRandomLikes(
+                        enabled = isPremium && randomLikesEnabled,
+                        minVideos = randomLikesMinVideos.toIntOrNull() ?: MainViewModel.WARMUP_RANDOM_LIKES_MIN,
+                        maxVideos = randomLikesMaxVideos.toIntOrNull() ?: MainViewModel.WARMUP_RANDOM_LIKES_MAX,
+                        tapGapMs = randomLikesTapGapMs.toLongOrNull() ?: MainViewModel.WARMUP_RANDOM_LIKES_TAP_GAP_MS,
+                        postDelayMs = randomLikesPostDelayMs.toLongOrNull() ?: MainViewModel.WARMUP_RANDOM_LIKES_POST_DELAY_MS
+                    )
 
                     viewModel.activeSwipePreset = Preset(
                         name = bActivePresetName,
@@ -357,7 +476,7 @@ fun SwipeScreen(
                         stopDurationUnit = stopDurationUnit,
                         pointsJson = "",
                         zonesJson = "",
-                        humanTouchEnabled = pathHumanized
+                        humanTouchEnabled = isPremium && pathHumanized
                     )
 
                     viewModel.swipeCoordinates = SwipeCoordinates(startX, startY, endX, endY)
@@ -402,8 +521,8 @@ fun SwipeScreen(
                         text = if (viewModel.isOverlayWorkspaceActive) {
                             if (isRu) "ЗАКРЫТЬ ПАНЕЛЬ УПРАВЛЕНИЯ" else "STOP OVERLAY WORKSPACE"
                         } else if (viewModel.isExpertMode) {
-                            if (isActive) (if (isRu) "ОСТАНОВИТЬ СВАЙП" else "STOP BACKGROUND SWIPING")
-                            else (if (isRu) "СТАРТ ЖЕСТА В ФОНЕ" else "START SWIPING IN BG")
+                            if (isActive) (if (isRu) "ОСТАНОВИТЬ ПРОГРЕВ" else "STOP WARMUP")
+                            else (if (isRu) "ЗАПУСТИТЬ ПРОГРЕВ" else "START WARMUP")
                         } else {
                             if (isRu) "ВЫБРАТЬ РЕЖИМ (ОТКРЫТЬ ПАНЕЛЬ)" else "SELECT MODE (LAUNCH OVERLAY)"
                         },

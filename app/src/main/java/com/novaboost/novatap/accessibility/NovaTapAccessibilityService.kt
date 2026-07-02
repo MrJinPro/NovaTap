@@ -11,6 +11,17 @@ import kotlin.coroutines.resume
 
 class NovaTapAccessibilityService : AccessibilityService() {
 
+    companion object {
+        private const val MIN_GESTURE_DURATION_MS = 5L
+
+        @Volatile
+        var instance: NovaTapAccessibilityService? = null
+            private set
+
+        val isServiceRunning: Boolean
+            get() = instance != null
+    }
+
     override fun onAccessibilityEvent(event: AccessibilityEvent?) {}
 
     override fun onInterrupt() {}
@@ -37,8 +48,7 @@ class NovaTapAccessibilityService : AccessibilityService() {
                 lineTo(x, y + 0.5f)
             }
             
-            // Allow extreme speeds by coercing to 10ms minimum instead of 40ms
-            val stroke = GestureDescription.StrokeDescription(strokePath, 0, holdDurationMs.coerceAtLeast(10))
+            val stroke = GestureDescription.StrokeDescription(strokePath, 0, holdDurationMs.coerceAtLeast(MIN_GESTURE_DURATION_MS))
             val gestureBuilder = GestureDescription.Builder().apply {
                 addStroke(stroke)
             }
@@ -69,7 +79,7 @@ class NovaTapAccessibilityService : AccessibilityService() {
                 lineTo(actualEndX, actualEndY)
             }
             
-            val stroke = GestureDescription.StrokeDescription(strokePath, 0, durationMs.coerceAtLeast(10))
+            val stroke = GestureDescription.StrokeDescription(strokePath, 0, durationMs.coerceAtLeast(MIN_GESTURE_DURATION_MS))
             val gestureBuilder = GestureDescription.Builder().apply {
                 addStroke(stroke)
             }
@@ -98,7 +108,7 @@ class NovaTapAccessibilityService : AccessibilityService() {
                     lineTo(x, y + 0.5f)
                 }
                 
-                val stroke = GestureDescription.StrokeDescription(strokePath, 0, holdDurationMs.coerceAtLeast(10))
+                val stroke = GestureDescription.StrokeDescription(strokePath, 0, holdDurationMs.coerceAtLeast(MIN_GESTURE_DURATION_MS))
                 val gestureBuilder = GestureDescription.Builder().apply {
                     addStroke(stroke)
                 }
@@ -144,7 +154,7 @@ class NovaTapAccessibilityService : AccessibilityService() {
                     lineTo(actualEndX, actualEndY)
                 }
                 
-                val stroke = GestureDescription.StrokeDescription(strokePath, 0, durationMs.coerceAtLeast(10))
+                val stroke = GestureDescription.StrokeDescription(strokePath, 0, durationMs.coerceAtLeast(MIN_GESTURE_DURATION_MS))
                 val gestureBuilder = GestureDescription.Builder().apply {
                     addStroke(stroke)
                 }
@@ -178,12 +188,4 @@ class NovaTapAccessibilityService : AccessibilityService() {
         }
     }
 
-    companion object {
-        @Volatile
-        var instance: NovaTapAccessibilityService? = null
-            private set
-
-        val isServiceRunning: Boolean
-            get() = instance != null
-    }
 }

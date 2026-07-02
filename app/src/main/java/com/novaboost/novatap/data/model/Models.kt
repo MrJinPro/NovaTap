@@ -8,8 +8,8 @@ data class Preset(
     @PrimaryKey(autoGenerate = true) val id: Int = 0,
     val name: String,
     val type: String, // "single", "multi", "area", "swipe"
-    val intervalMs: Long = 200,
-    val holdMs: Long = 50,
+    val intervalMs: Long = 40,
+    val holdMs: Long = 5,
     val repeatCount: Int = 0,
     val mode: String = "sequential", // "sequential", "random_order", "loop"
     val pointsJson: String = "[]",
@@ -65,8 +65,8 @@ data class TapPoint(
     val x: Float,
     val y: Float,
     val label: String = "",
-    val delayMs: Long = 200,
-    val holdMs: Long = 50
+    val delayMs: Long = 40,
+    val holdMs: Long = 10
 )
 
 data class TapZone(

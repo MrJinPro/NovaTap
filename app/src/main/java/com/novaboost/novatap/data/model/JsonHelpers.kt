@@ -32,8 +32,8 @@ object JsonHelpers {
                         x = obj.optDouble("x", 0.0).toFloat(),
                         y = obj.optDouble("y", 0.0).toFloat(),
                         label = obj.optString("label", ""),
-                        delayMs = obj.optLong("delayMs", 200),
-                        holdMs = obj.optLong("holdMs", 50)
+                        delayMs = obj.optLong("delayMs", 40),
+                        holdMs = obj.optLong("holdMs", 10)
                     )
                 )
             }

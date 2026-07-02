@@ -44,8 +44,8 @@ fun AreaTapScreen(
     val isRu = viewModel.selectedLanguage == "ru"
 
     var bActivePresetName by remember { mutableStateOf("My Area Preset") }
-    var intervalMs by remember { mutableStateOf("400") }
-    var holdMs by remember { mutableStateOf("40") }
+    var intervalMs by remember { mutableStateOf("40") }
+    var holdMs by remember { mutableStateOf("5") }
     var repeats by remember { mutableStateOf("100") }
     var stopConditionType by remember { mutableStateOf("infinite") } // "infinite", "duration", "clicks"
     var stopDurationAmount by remember { mutableStateOf("10") }
@@ -58,7 +58,7 @@ fun AreaTapScreen(
         val preset = viewModel.activeAreaTapPreset
         bActivePresetName = preset.name
         intervalMs = preset.intervalMs.toString()
-        holdMs = "40"
+        holdMs = preset.holdMs.toString()
         repeats = preset.repeatCount.toString()
         stopConditionType = preset.stopConditionType
         stopDurationAmount = preset.stopDurationAmount.toString()
@@ -390,8 +390,8 @@ fun AreaTapScreen(
                             onClick = {
                                 val activeVal = viewModel.activeAreaTapPreset.copy(
                                     name = bActivePresetName,
-                                    intervalMs = intervalMs.toLongOrNull()?.coerceAtLeast(10) ?: 400,
-                                    holdMs = 10,
+                                    intervalMs = intervalMs.toLongOrNull()?.coerceAtLeast(MainViewModel.MIN_INTERVAL_MS) ?: MainViewModel.MIN_INTERVAL_MS,
+                                    holdMs = holdMs.toLongOrNull()?.coerceAtLeast(MainViewModel.MIN_HOLD_MS) ?: MainViewModel.MIN_HOLD_MS,
                                     repeatCount = repeats.toIntOrNull() ?: 0,
                                     stopConditionType = stopConditionType,
                                     stopDurationAmount = stopDurationAmount.toLongOrNull() ?: 10L,
@@ -423,8 +423,8 @@ fun AreaTapScreen(
             val isActive = viewModel.isAutomationActive
             Button(
                 onClick = {
-                    val finalInt = intervalMs.toLongOrNull()?.coerceAtLeast(10) ?: 400
-                    val finalHold = 10L
+                    val finalInt = intervalMs.toLongOrNull()?.coerceAtLeast(MainViewModel.MIN_INTERVAL_MS) ?: MainViewModel.MIN_INTERVAL_MS
+                    val finalHold = holdMs.toLongOrNull()?.coerceAtLeast(MainViewModel.MIN_HOLD_MS) ?: MainViewModel.MIN_HOLD_MS
 
                     viewModel.activeAreaTapPreset = Preset(
                         name = bActivePresetName,

@@ -59,6 +59,18 @@ fun Context.findActivity(): android.app.Activity? {
 class MainViewModel(application: Application) : AndroidViewModel(application) {
 
     companion object {
+        const val MIN_INTERVAL_MS = 40L
+        const val MIN_HOLD_MS = 5L
+        const val MIN_SINGLE_INTERVAL_FREE_MS = 100L
+        const val MULTI_DEFAULT_HOLD_MS = 10L
+        const val WARMUP_DEFAULT_INTERVAL_MS = 5_000L
+        const val WARMUP_DEFAULT_SWIPE_MS = 100L
+        const val WARMUP_FREE_DAILY_SWIPE_LIMIT = 10L
+        const val WARMUP_RANDOM_LIKES_MIN = 1
+        const val WARMUP_RANDOM_LIKES_MAX = 8
+        const val WARMUP_RANDOM_LIKES_TAP_GAP_MS = 50L
+        const val WARMUP_RANDOM_LIKES_POST_DELAY_MS = 1_000L
+
         @Volatile
         var instance: MainViewModel? = null
             private set
@@ -75,6 +87,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     var isAdFreeUser by mutableStateOf(false)
     var isOverlayEnabled by mutableStateOf(false)
     var showTapRipples by mutableStateOf(false)
+    var compatibilityMode by mutableStateOf(true)
 
     // Special Promo Tasks
     var bonusTapsLimit by mutableStateOf(0L)
@@ -86,8 +99,8 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
             id = "novacleaner",
             titleRu = "Установить Nova Cleaner & Booster",
             titleEn = "Install Nova Cleaner & Booster",
-            descriptionRu = "Бесплатный оптимизатор памяти и очиститель кэша. Установите его и получите 7 дней Премиум без рекламы и лимитов!",
-            descriptionEn = "Free memory optimizer and cache cleaner. Install it to get 7 days of Premium with no ads and unlimited clicks!",
+            descriptionRu = "Бесплатный оптимизатор памяти и очиститель кэша. Установите и получите 7 дней Premium с расширенными функциями.",
+            descriptionEn = "Free memory optimizer and cache cleaner. Install it to get 7 days of Premium with advanced features.",
             targetPackage = "com.novaboost.cleaner",
             targetUrl = "https://play.google.com/store/apps/details?id=com.novaboost.cleaner",
             rewardPremiumDays = 7
@@ -96,8 +109,8 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
             id = "novagamebooster",
             titleRu = "Установить Nova Game Booster",
             titleEn = "Install Nova Game Booster",
-            descriptionRu = "Ускоритель игр для максимального FPS. Установите его и получите +100,000 кликов к суточному лимиту навсегда!",
-            descriptionEn = "Game booster for maximum FPS. Install it to get +100,000 to your daily action limit forever!",
+            descriptionRu = "Ускоритель игр для максимального FPS. Установите и получите постоянный boost производительности профиля.",
+            descriptionEn = "Game booster for maximum FPS. Install it and get a permanent profile performance boost.",
             targetPackage = "com.novaboost.gamebooster",
             targetUrl = "https://play.google.com/store/apps/details?id=com.novaboost.gamebooster",
             rewardTaps = 100000L
@@ -106,8 +119,8 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
             id = "telegram_channel",
             titleRu = "Подписаться на наш Telegram",
             titleEn = "Join our Telegram Channel",
-            descriptionRu = "Следите за обновлениями, общайтесь и делитесь сценариями кликера. Награда: +50,000 кликов к лимиту навсегда!",
-            descriptionEn = "Follow updates, chat, and share clicker scenarios. Reward: +50,000 to your daily limit forever!",
+            descriptionRu = "Следите за обновлениями, общайтесь и делитесь сценариями. Награда: постоянный boost профиля.",
+            descriptionEn = "Follow updates, chat, and share scenarios. Reward: permanent profile boost.",
             targetPackage = null,
             targetUrl = "https://t.me/novaboost_channel",
             rewardTaps = 50000L
@@ -116,8 +129,8 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
             id = "chrometest",
             titleRu = "[ТЕСТ] Проверить установку Google Chrome",
             titleEn = "[TEST] Check Google Chrome Install",
-            descriptionRu = "Это тестовое задание для демонстрации работы проверки. Нажмите кнопку, чтобы получить +25,000 кликов навсегда!",
-            descriptionEn = "This is a test task to demonstrate how verification works. Click the button to get +25,000 daily clicks forever!",
+            descriptionRu = "Это тестовое задание для демонстрации работы проверки. Нажмите кнопку, чтобы получить тестовый boost профиля.",
+            descriptionEn = "This is a test task to demonstrate verification. Click the button to receive a profile test boost.",
             targetPackage = "com.android.chrome",
             targetUrl = "https://play.google.com/store/apps/details?id=com.android.chrome",
             rewardTaps = 25000L
@@ -127,9 +140,18 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     // Statistics States
     private val _todayUsageActions = MutableStateFlow<Long>(0)
     val todayUsageActions = _todayUsageActions.asStateFlow()
+    private val _todaySwipeActions = MutableStateFlow<Long>(0)
+    val todaySwipeActions = _todaySwipeActions.asStateFlow()
 
     private val _adRewardedAdditionalActions = MutableStateFlow<Long>(0)
     val adRewardedAdditionalActions = _adRewardedAdditionalActions.asStateFlow()
+
+    // Warmup premium feature settings
+    var warmupRandomLikesEnabled by mutableStateOf(false)
+    var warmupRandomLikesMinVideos by mutableStateOf(WARMUP_RANDOM_LIKES_MIN)
+    var warmupRandomLikesMaxVideos by mutableStateOf(WARMUP_RANDOM_LIKES_MAX)
+    var warmupRandomLikesTapGapMs by mutableStateOf(WARMUP_RANDOM_LIKES_TAP_GAP_MS)
+    var warmupRandomLikesPostDelayMs by mutableStateOf(WARMUP_RANDOM_LIKES_POST_DELAY_MS)
 
     // Flag for limit-reached popup
     private var _displayLimitDialog by mutableStateOf(false)
@@ -143,19 +165,19 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         }
 
     // Selected/Active preset details config states for each module
-    var activeSingleTapPreset by mutableStateOf(Preset(name = "Single Tap Preset", type = "single", intervalMs = 200, holdMs = 50))
+    var activeSingleTapPreset by mutableStateOf(Preset(name = "Likes Preset", type = "single", intervalMs = MIN_INTERVAL_MS, holdMs = MIN_HOLD_MS, microOffsetPx = 50, randomIntervalRange = 40, randomHoldRange = 5))
     
     // Multi tap coordinates storage list
     var multiTapPoints by mutableStateOf<List<TapPoint>>(emptyList())
-    var activeMultiTapPreset by mutableStateOf(Preset(name = "Multi Tap Preset", type = "multi", mode = "sequential", intervalMs = 300, holdMs = 50))
+    var activeMultiTapPreset by mutableStateOf(Preset(name = "Multi Tap Preset", type = "multi", mode = "sequential", intervalMs = MIN_INTERVAL_MS, holdMs = MULTI_DEFAULT_HOLD_MS))
 
     // Flagship Area tap zone list
     var areaTapZones by mutableStateOf<List<TapZone>>(emptyList())
-    var activeAreaTapPreset by mutableStateOf(Preset(name = "Area Tap Preset", type = "area", mode = "balanced_random", intervalMs = 400, holdMs = 60))
+    var activeAreaTapPreset by mutableStateOf(Preset(name = "Area Tap Preset", type = "area", mode = "balanced_random", intervalMs = MIN_INTERVAL_MS, holdMs = MIN_HOLD_MS))
 
     // Swipe coordinate settings state
-    var activeSwipePreset by mutableStateOf(Preset(name = "Swipe Preset", type = "swipe", intervalMs = 800, holdMs = 300))
-    var swipeCoordinates by mutableStateOf(SwipeCoordinates(startX = 200f, startY = 800f, endX = 800f, endY = 200f))
+    var activeSwipePreset by mutableStateOf(Preset(name = "Feed Warmup Preset", type = "swipe", intervalMs = WARMUP_DEFAULT_INTERVAL_MS, holdMs = WARMUP_DEFAULT_SWIPE_MS))
+    var swipeCoordinates by mutableStateOf(SwipeCoordinates(startX = 400f, startY = 800f, endX = 400f, endY = 200f))
 
     // Scenario builder state
     var activeScenarioName by mutableStateOf("")
@@ -335,6 +357,12 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
             isAdFreeUser = repository.getSettingValue("ad_free", "false").toBoolean()
             showTapRipples = repository.getSettingValue("show_ripples", "false").toBoolean()
             showDiagnostics = repository.getSettingValue("show_diagnostics", "false").toBoolean()
+            compatibilityMode = repository.getSettingValue("compatibility_mode", "true").toBoolean()
+            warmupRandomLikesEnabled = repository.getSettingValue("warmup_random_likes_enabled", "false").toBoolean()
+            warmupRandomLikesMinVideos = repository.getSettingValue("warmup_random_likes_min_videos", WARMUP_RANDOM_LIKES_MIN.toString()).toIntOrNull()?.coerceAtLeast(1) ?: WARMUP_RANDOM_LIKES_MIN
+            warmupRandomLikesMaxVideos = repository.getSettingValue("warmup_random_likes_max_videos", WARMUP_RANDOM_LIKES_MAX.toString()).toIntOrNull()?.coerceAtLeast(warmupRandomLikesMinVideos) ?: WARMUP_RANDOM_LIKES_MAX
+            warmupRandomLikesTapGapMs = repository.getSettingValue("warmup_random_likes_tap_gap_ms", WARMUP_RANDOM_LIKES_TAP_GAP_MS.toString()).toLongOrNull()?.coerceAtLeast(MIN_HOLD_MS) ?: WARMUP_RANDOM_LIKES_TAP_GAP_MS
+            warmupRandomLikesPostDelayMs = repository.getSettingValue("warmup_random_likes_post_delay_ms", WARMUP_RANDOM_LIKES_POST_DELAY_MS.toString()).toLongOrNull()?.coerceAtLeast(100L) ?: WARMUP_RANDOM_LIKES_POST_DELAY_MS
 
             // Load special task settings
             bonusTapsLimit = repository.getSettingValue("bonus_taps_limit", "0").toLong()
@@ -355,8 +383,10 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
             repository.getDailyStatisticFlow().collect { daily ->
                 if (daily != null) {
                     _todayUsageActions.value = daily.totalActions
+                    _todaySwipeActions.value = daily.swipeCount
                 } else {
                     _todayUsageActions.value = 0
+                    _todaySwipeActions.value = 0
                 }
             }
         }
@@ -552,6 +582,54 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         }
     }
 
+    fun toggleCompatibilityMode(enabled: Boolean) {
+        compatibilityMode = enabled
+        viewModelScope.launch {
+            repository.saveSetting("compatibility_mode", enabled.toString())
+        }
+    }
+
+    fun getSingleTapMinIntervalMs(): Long {
+        return if (isAdFreeUser) MIN_INTERVAL_MS else MIN_SINGLE_INTERVAL_FREE_MS
+    }
+
+    fun getRemainingWarmupSwipes(): Long {
+        if (isAdFreeUser) return Long.MAX_VALUE
+        return (WARMUP_FREE_DAILY_SWIPE_LIMIT - _todaySwipeActions.value).coerceAtLeast(0)
+    }
+
+    fun updateWarmupRandomLikes(enabled: Boolean, minVideos: Int, maxVideos: Int, tapGapMs: Long, postDelayMs: Long) {
+        val safeMin = minVideos.coerceAtLeast(1)
+        val safeMax = maxVideos.coerceAtLeast(safeMin)
+        warmupRandomLikesEnabled = enabled
+        warmupRandomLikesMinVideos = safeMin
+        warmupRandomLikesMaxVideos = safeMax
+        warmupRandomLikesTapGapMs = tapGapMs.coerceAtLeast(MIN_HOLD_MS)
+        warmupRandomLikesPostDelayMs = postDelayMs.coerceAtLeast(100L)
+
+        viewModelScope.launch {
+            repository.saveSetting("warmup_random_likes_enabled", warmupRandomLikesEnabled.toString())
+            repository.saveSetting("warmup_random_likes_min_videos", warmupRandomLikesMinVideos.toString())
+            repository.saveSetting("warmup_random_likes_max_videos", warmupRandomLikesMaxVideos.toString())
+            repository.saveSetting("warmup_random_likes_tap_gap_ms", warmupRandomLikesTapGapMs.toString())
+            repository.saveSetting("warmup_random_likes_post_delay_ms", warmupRandomLikesPostDelayMs.toString())
+        }
+    }
+
+    private fun nextRandomWarmupLikeStep(previous: Int?): Int {
+        val min = warmupRandomLikesMinVideos.coerceAtLeast(1)
+        val max = warmupRandomLikesMaxVideos.coerceAtLeast(min)
+        if (min == max) return min
+
+        var next = Random.nextInt(min, max + 1)
+        if (previous != null && max > min) {
+            while (next == previous) {
+                next = Random.nextInt(min, max + 1)
+            }
+        }
+        return next
+    }
+
     // Remove Ads Subscription
     fun removeAdsService() {
         isAdFreeUser = true
@@ -650,7 +728,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     fun sendLimitReachedNotification() {
         val context = getApplication<Application>()
         val channelId = "limit_notification"
-        val channelName = if (selectedLanguage == "ru") "Уведомления о лимите" else "Limit Notifications"
+        val channelName = if (selectedLanguage == "ru") "Уведомления о прогреве" else "Warmup Notifications"
         val notificationId = 1001
 
         val notificationManager = context.getSystemService(Context.NOTIFICATION_SERVICE) as? NotificationManager
@@ -659,7 +737,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             val importance = NotificationManager.IMPORTANCE_HIGH
             val channel = NotificationChannel(channelId, channelName, importance).apply {
-                description = if (selectedLanguage == "ru") "Уведомления о превышении дневного лимита действий" else "Notifications when daily actions limit is exceeded"
+                description = if (selectedLanguage == "ru") "Уведомления о лимите тестового режима прогрева" else "Notifications for warmup free-trial limit"
                 enableVibration(true)
             }
             notificationManager.createNotificationChannel(channel)
@@ -681,15 +759,15 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         )
 
         val title = if (selectedLanguage == "ru") {
-            "Дневной лимит тапов исчерпан! 🚀"
+            "Тест прогрева завершен"
         } else {
-            "Daily click limit reached! 🚀"
+            "Warmup trial limit reached"
         }
 
         val contentText = if (selectedLanguage == "ru") {
-            "Хотите продолжить? Уберите рекламу и лимиты всего за \$0.99 подпиской! Это даст 100% обход детекции (Stealth mode) и снижение нагрузки на 40%!"
+            "В бесплатной версии доступно до 10 свайпов прогрева в сутки. Переход на Premium снимает это ограничение и открывает расширенные функции."
         } else {
-            "Want to continue? Remove ads and limits for just \$0.99! Get 100% detection bypass (Stealth mode) & 40% CPU load reduction!"
+            "Free mode allows up to 10 warmup swipes per day. Upgrade to Premium to remove this limit and unlock advanced features."
         }
 
         val builder = NotificationCompat.Builder(context, channelId)
@@ -990,21 +1068,18 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     }
 
     fun getActionsLimit(): Long {
-        return if (isAdFreeUser) Long.MAX_VALUE else (50000 + _adRewardedAdditionalActions.value + bonusTapsLimit)
+        return Long.MAX_VALUE
     }
 
     fun getRemainingActions(): Long {
-        val totalAllowed = getActionsLimit()
-        if (totalAllowed == Long.MAX_VALUE) return 9999999
-        val rem = totalAllowed - _todayUsageActions.value
-        return rem.coerceAtLeast(0)
+        return Long.MAX_VALUE
     }
 
     // Add point to Multi-Tap
     fun addMultiTapPoint(x: Float, y: Float): TapPoint? {
         if (multiTapPoints.size < 20) {
             val newPoints = multiTapPoints.toMutableList()
-            val point = TapPoint(x = x, y = y, label = "${newPoints.size + 1}")
+            val point = TapPoint(x = x, y = y, label = "${newPoints.size + 1}", holdMs = MULTI_DEFAULT_HOLD_MS)
             newPoints.add(point)
             multiTapPoints = newPoints
             return point
@@ -1021,7 +1096,12 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
 
     fun updateMultiTapPointTimings(id: String, delayMs: Long, holdMs: Long) {
         val newPoints = multiTapPoints.map {
-            if (it.id == id) it.copy(delayMs = delayMs, holdMs = holdMs) else it
+            if (it.id == id) {
+                it.copy(
+                    delayMs = delayMs.coerceAtLeast(MIN_INTERVAL_MS),
+                    holdMs = holdMs.coerceAtLeast(MIN_HOLD_MS)
+                )
+            } else it
         }
         multiTapPoints = newPoints
     }
@@ -1257,14 +1337,15 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         }
 
         val config = activeSingleTapPreset
+        val minInterval = getSingleTapMinIntervalMs()
         // Validate timing safety
-        if (config.intervalMs < 10 || config.holdMs < 10) {
-            executionLog.value = "Safety Cancelled: Timing parameters cannot be lower than 10ms!"
+        if (config.intervalMs < minInterval || config.holdMs < MIN_HOLD_MS) {
+            executionLog.value = "Safety Cancelled: timing cannot be lower than ${minInterval}ms interval and ${MIN_HOLD_MS}ms hold."
             return
         }
 
         isAutomationActive = true
-        executionLog.value = "Started Single Tap Loop..."
+        executionLog.value = "Started Likes loop..."
 
         val stopDurationMs = when (config.stopDurationUnit) {
             "seconds" -> config.stopDurationAmount * 1000L
@@ -1277,14 +1358,6 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         automationJob = viewModelScope.launch {
             var counter = 0
             while (isAutomationActive) {
-                // Check daily limits
-                if (getRemainingActions() <= 0) {
-                    isAutomationActive = false
-                    displayLimitDialog = true
-                    executionLog.value = "Daily interaction limit reached."
-                    break
-                }
-
                 // Check stop condition: duration
                 if (config.stopConditionType == "duration" && stopDurationMs > 0) {
                     val elapsed = System.currentTimeMillis() - startTime
@@ -1311,7 +1384,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
                 var currentInterval = config.intervalMs
                 var currentHold = config.holdMs
 
-                if (config.humanTouchEnabled) {
+                if (isAdFreeUser && config.humanTouchEnabled) {
                     if (config.microOffsetPx > 0) {
                         finalX += Random.nextInt(-config.microOffsetPx, config.microOffsetPx)
                         finalY += Random.nextInt(-config.microOffsetPx, config.microOffsetPx)
@@ -1324,8 +1397,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
                     }
                 }
 
-                // Clamp values and dispatch click! Use 10ms minimum hold time for hyper-speed performance.
-                val worked = performClickSuspended(finalX, finalY, currentHold.coerceAtLeast(10))
+                val worked = performClickSuspended(finalX, finalY, currentHold.coerceAtLeast(MIN_HOLD_MS))
                 triggerVisualTap(finalX, finalY)
 
                 if (worked) {
@@ -1343,7 +1415,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
                     break
                 }
 
-                delay(currentInterval.coerceAtLeast(10))
+                delay(currentInterval.coerceAtLeast(minInterval))
             }
         }
     }
@@ -1376,12 +1448,6 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
             var counter = 0
             var currentIndex = 0
             while (isRunningAndNotEmpty(multiTapPoints)) {
-                if (getRemainingActions() <= 0) {
-                    isAutomationActive = false
-                    displayLimitDialog = true
-                    break
-                }
-
                 // Check stop condition: duration
                 if (config.stopConditionType == "duration" && stopDurationMs > 0) {
                     val elapsed = System.currentTimeMillis() - startTime
@@ -1412,7 +1478,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
                 finalX += antiCheatJitterX
                 finalY += antiCheatJitterY
 
-                if (config.humanTouchEnabled) {
+                if (isAdFreeUser && config.humanTouchEnabled) {
                     if (config.microOffsetPx > 0) {
                         finalX += Random.nextInt(-config.microOffsetPx, config.microOffsetPx)
                         finalY += Random.nextInt(-config.microOffsetPx, config.microOffsetPx)
@@ -1425,7 +1491,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
                     }
                 }
 
-                val worked = performClickSuspended(finalX, finalY, finalHold.coerceAtLeast(10))
+                val worked = performClickSuspended(finalX, finalY, finalHold.coerceAtLeast(MIN_HOLD_MS))
                 triggerVisualTap(finalX, finalY)
 
                 if (worked) {
@@ -1444,7 +1510,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
                 }
 
                 currentIndex++
-                delay(finalInterval.coerceAtLeast(10))
+                delay(finalInterval.coerceAtLeast(MIN_INTERVAL_MS))
             }
         }
     }
@@ -1481,12 +1547,6 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         automationJob = viewModelScope.launch {
             var counter = 0
             while (isAutomationActive) {
-                if (getRemainingActions() <= 0) {
-                    isAutomationActive = false
-                    displayLimitDialog = true
-                    break
-                }
-
                 // Check stop condition: duration
                 if (config.stopConditionType == "duration" && stopDurationMs > 0) {
                     val elapsed = System.currentTimeMillis() - startTime
@@ -1597,7 +1657,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
                 }
 
                 if (foundTarget) {
-                    val worked = performClickSuspended(finalX, finalY, config.holdMs.coerceAtLeast(10))
+                    val worked = performClickSuspended(finalX, finalY, config.holdMs.coerceAtLeast(MIN_HOLD_MS))
                     triggerVisualTap(finalX, finalY)
 
                     if (worked) {
@@ -1618,7 +1678,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
                     break
                 }
 
-                delay(config.intervalMs.coerceAtLeast(10))
+                delay(config.intervalMs.coerceAtLeast(MIN_INTERVAL_MS))
             }
         }
     }
@@ -1632,7 +1692,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
 
         val config = activeSwipePreset
         isAutomationActive = true
-        executionLog.value = "Started Swipe Automation Loop..."
+        executionLog.value = "Started Feed Warmup loop..."
 
         val stopDurationMs = when (config.stopDurationUnit) {
             "seconds" -> config.stopDurationAmount * 1000L
@@ -1644,10 +1704,14 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
 
         automationJob = viewModelScope.launch {
             var counter = 0
+            var currentLikeStep = nextRandomWarmupLikeStep(null)
+            var videosUntilNextLike = currentLikeStep
+            var previousLikeStep: Int? = null
             while (isAutomationActive) {
-                if (getRemainingActions() <= 0) {
+                if (!isAdFreeUser && getRemainingWarmupSwipes() <= 0) {
                     isAutomationActive = false
                     displayLimitDialog = true
+                    executionLog.value = "Free warmup test limit reached (10 swipes/day)."
                     break
                 }
 
@@ -1667,7 +1731,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
                 var ey = swipeCoordinates.endY
                 var waitTime = config.intervalMs
 
-                if (config.humanTouchEnabled) {
+                if (isAdFreeUser && config.humanTouchEnabled) {
                     if (config.microOffsetPx > 0) {
                         sx += Random.nextInt(-config.microOffsetPx, config.microOffsetPx)
                         sy += Random.nextInt(-config.microOffsetPx, config.microOffsetPx)
@@ -1679,16 +1743,37 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
                     }
                 }
 
-                val worked = performSwipeSuspended(sx, sy, ex, ey, config.holdMs.coerceAtLeast(10))
+                val worked = performSwipeSuspended(sx, sy, ex, ey, config.holdMs.coerceAtLeast(MIN_HOLD_MS))
 
                 if (worked) {
-                    logExecution("[Real Swipe] Dispatched ($sx, $sy) -> ($ex, $ey)")
+                    logExecution("[Warmup Swipe] Dispatched ($sx, $sy) -> ($ex, $ey)")
                 } else {
-                    logExecution("[Sim Swipe] Drag outline drawn from ($sx, $sy) to ($ex, $ey)")
+                    logExecution("[Warmup Sim] Drag outline drawn from ($sx, $sy) to ($ex, $ey)")
                 }
 
                 repository.incrementActions("swipe", 1)
                 counter++
+
+                if (isAdFreeUser && warmupRandomLikesEnabled) {
+                    videosUntilNextLike--
+                    if (videosUntilNextLike <= 0) {
+                        val metrics = getApplication<Application>().resources.displayMetrics
+                        val centerX = metrics.widthPixels / 2f
+                        val centerY = metrics.heightPixels / 2f
+
+                        performClickSuspended(centerX, centerY, MIN_HOLD_MS)
+                        delay(warmupRandomLikesTapGapMs.coerceAtLeast(MIN_HOLD_MS))
+                        performClickSuspended(centerX, centerY, MIN_HOLD_MS)
+                        delay(warmupRandomLikesPostDelayMs.coerceAtLeast(100L))
+                        repository.incrementActions("tap", 2)
+
+                        logExecution("[Warmup] Random double-like injected.", force = true)
+
+                        previousLikeStep = currentLikeStep
+                        currentLikeStep = nextRandomWarmupLikeStep(previousLikeStep)
+                        videosUntilNextLike = currentLikeStep
+                    }
+                }
 
                 if (config.stopConditionType == "clicks" && config.repeatCount > 0 && counter >= config.repeatCount) {
                     logExecution("Finished swipes sequence.", force = true)
@@ -1696,7 +1781,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
                     break
                 }
 
-                delay(waitTime.coerceAtLeast(10))
+                delay(waitTime.coerceAtLeast(MIN_INTERVAL_MS))
             }
         }
     }
@@ -1721,12 +1806,6 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
             while (isAutomationActive) {
                 for (step in scenarioSteps) {
                     if (!isAutomationActive) break
-                    
-                    if (getRemainingActions() <= 0) {
-                        isAutomationActive = false
-                        displayLimitDialog = true
-                        break
-                    }
 
                     executionLog.value = "Executing step: ${step.type} (${step.durationMs}ms)"
 
@@ -1734,7 +1813,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
 
                     when (step.type) {
                         "tap" -> {
-                            val worked = performClickSuspended(step.x, step.y, 50)
+                            val worked = performClickSuspended(step.x, step.y, MIN_HOLD_MS)
                             triggerVisualTap(step.x, step.y)
                             if (worked) {
                                 logExecution("[Real Scenario] Step Tap Clicked Coordinate (${step.x}, ${step.y})")
@@ -1749,7 +1828,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
                             if (allowedZone != null) {
                                 val rx = allowedZone.x + Random.nextInt(-30, 30)
                                 val ry = allowedZone.y + Random.nextInt(-30, 30)
-                                val worked = performClickSuspended(rx, ry, 50)
+                                val worked = performClickSuspended(rx, ry, MIN_HOLD_MS)
                                 triggerVisualTap(rx, ry)
                                 if (worked) {
                                     logExecution("[Real Scenario] Step Area clicked inside allowed space ($rx, $ry)")
@@ -1762,7 +1841,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
                             }
                         }
                         "swipe" -> {
-                            val worked = performSwipeSuspended(100f, 800f, 800f, 100f, 350)
+                            val worked = performSwipeSuspended(100f, 800f, 800f, 100f, MIN_HOLD_MS)
                             if (worked) {
                                 logExecution("[Real Scenario] Step Swipe executed.")
                             } else {
@@ -1771,7 +1850,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
                             repository.incrementActions("scenario", 1)
                         }
                         "wait" -> {
-                            delay(step.durationMs.coerceAtLeast(10))
+                            delay(step.durationMs.coerceAtLeast(MIN_INTERVAL_MS))
                         }
                         "loop" -> {
                             logExecution("Scenario looping back.", force = true)

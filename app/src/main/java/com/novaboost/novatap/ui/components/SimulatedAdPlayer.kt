@@ -233,7 +233,7 @@ fun SimulatedAdPlayer(viewModel: MainViewModel) {
                             modifier = Modifier.fillMaxWidth()
                         ) {
                             Text(
-                                text = if (isRu) "Забрать Награду (+10к)" else "Claim Reward (+10k)",
+                                text = if (isRu) "Забрать награду" else "Claim Reward",
                                 color = SpaceDarkBg,
                                 fontWeight = FontWeight.Bold
                             )

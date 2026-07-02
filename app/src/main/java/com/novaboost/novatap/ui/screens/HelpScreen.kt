@@ -78,21 +78,21 @@ fun HelpScreen(
             letterSpacing = 1.1.sp
         )
 
-        // Guide 1: Single Clicker
+        // Guide 1: Likes
         HelpSectionCard(
-            title = if (isRu) "Одиночное Нажатие — Клик в точке" else "Single Click Target Point",
+            title = if (isRu) "Лайки — клик в точке" else "Likes - Point Tap",
             desc = if (isRu) {
-                "Позволяет эмулировать клик в фиксированных координатах. \n\n" +
+                "Режим для лайков TikTok в фиксированной точке экрана. \n\n" +
                 "Инструкции по применению:\n" +
-                "1. Введите X и Y координаты цели.\n" +
-                "2. Укажите интервал нажатия (минимально 40мс).\n" +
-                "3. Включите Движок Human Touch для плавных перемещений и дрожания."
+                "1. Выберите точку лайка.\n" +
+                "2. Укажите интервал (Free от 100мс, Premium от 40мс).\n" +
+                "3. Human Touch доступен только в Premium."
             } else {
-                "Plopes target inputs at precise coordinate positions with constant recurrence.\n\n" +
+                "TikTok likes mode for one fixed point on screen.\n\n" +
                 "Procedure:\n" +
-                "1. Type desired targets absolute coordinates inside fields (X, Y).\n" +
-                "2. Set timings parameters in ms (minimum boundary of 40ms).\n" +
-                "3. Use Human Touch to introduce slight positional noise."
+                "1. Pick your like point.\n" +
+                "2. Set interval (Free min 100ms, Premium min 40ms).\n" +
+                "3. Human Touch is Premium-only."
             },
             icon = Icons.Default.AdsClick,
             isRu = isRu
@@ -138,21 +138,21 @@ fun HelpScreen(
             isRu = isRu
         )
 
-        // Guide 4: Swipe movements
+        // Guide 4: Feed Warmup
         HelpSectionCard(
-            title = if (isRu) "Слайды и Свайпы — Линейный дрейф" else "Gestures Swipes linear glide",
+            title = if (isRu) "Прогрев ленты TikTok" else "TikTok Feed Warmup",
             desc = if (isRu) {
-                "Имитирует непрерывные свайп движения пальцами на экране.\n\n" +
+                "Режим для новых аккаунтов: имитация естественного просмотра ленты.\n\n" +
                 "Процедура:\n" +
-                "1. Координата старта определяет место касания.\n" +
-                "2. Скорость свайпа в мс регулирует длительность перемещения пальцев.\n" +
-                "3. Опция «Изогнутый путь» эмулирует реальное нелинейное ускорение движений."
+                "1. По умолчанию: Start(400,800) -> End(400,200).\n" +
+                "2. Пауза между свайпами: 5 секунд, длительность свайпа: 100мс.\n" +
+                "3. Premium: случайные лайки (двойной тап) во время прогрева."
             } else {
-                "Simulates linear drag and continuous glide movements of fingers.\n\n" +
+                "Warmup mode for new accounts with natural feed behavior.\n\n" +
                 "Usage:\n" +
-                "1. Adjust Start coordinate point (touchdown anchor spot).\n" +
-                "2. Duration settings in ms controls finger motion glide velocity.\n" +
-                "3. Activation of Curved paths forces stochastic path curves mimicking true fingers."
+                "1. Defaults: Start(400,800) -> End(400,200).\n" +
+                "2. Pause between swipes: 5s, swipe duration: 100ms.\n" +
+                "3. Premium: random likes (double tap) during warmup."
             },
             icon = Icons.Default.Swipe,
             isRu = isRu
@@ -196,21 +196,17 @@ fun HelpScreen(
             isRu = isRu
         )
 
-        // Guide 7: Premium, Limits & Ad Rules
+        // Guide 7: Premium features
         HelpSectionCard(
-            title = if (isRu) "Лимиты, Реклама и Premium подписка" else "Daily Limits, Ads & Premium Pass",
+            title = if (isRu) "Free vs Premium" else "Free vs Premium",
             desc = if (isRu) {
-                "В приложении действуют следующие правила для оптимальной работы:\n\n" +
-                "1. PREMIUM ПОЛЬЗОВАТЕЛИ: Абсолютно никаких ограничений, рекламы и лимитов! Вы можете совершать хоть миллиард кликов без сбросов и задержек.\n" +
-                "2. БЕСПЛАТНАЯ ВЕРСИЯ: Включает лимит 50 000 кликов (действий) каждые 24 часа.\n" +
-                "3. ДОБАВЛЕНИЕ КЛИКОВ ЗА РЕКЛАМУ: Неоплатившие пользователи могут получить еще +10 000 кликов за просмотр 30-секундного спонсорского видео. Допускается максимум 3 рекламы (+30 000 кликов) за 15 минут, после чего таймер сбросится и можно посмотреть снова.\n" +
-                "4. МЕЖСТРАНИЧНАЯ РЕКЛАМА: Короткая 5-секундная пропускаемая реклама показывается бесплатным пользователям при возвращении в приложение (не чаще раза в 45 секунд)."
+                "1. Общего лимита на действия больше нет.\n" +
+                "2. Free: режим Лайки от 100мс, Прогрев доступен как тест (до 10 свайпов/сутки).\n" +
+                "3. Premium: выше производительность, Human Touch, случайные лайки в Прогреве и расширенные параметры."
             } else {
-                "The application operates under the following resource & feature guidelines:\n\n" +
-                "1. PREMIUM USERS: Absolutely no restrictions, no ads, and no limits! You can make billions of clicks with infinite freedom and no resets needed.\n" +
-                "2. FREE TIER: Grants a starting limit of 50,000 auto-clicks (actions) every 24 hours.\n" +
-                "3. ADD CLICKS VIA ADS: Non-premium users can add +10,000 clicks by watching a 30-second sponsored video. You can watch up to 3 ads (+30,000 clicks) per 15 minutes, after which you can watch another 3 ads.\n" +
-                "4. INTERSTITIAL ADS: Quick 5-second skippable ad shows to free users when returning to the app (no more than once per 45s)."
+                "1. Global daily action cap has been removed.\n" +
+                "2. Free: Likes min interval is 100ms, Warmup is trial-only (up to 10 swipes/day).\n" +
+                "3. Premium: higher performance, Human Touch, random likes in Warmup, and advanced controls."
             },
             icon = Icons.Default.Star,
             isRu = isRu

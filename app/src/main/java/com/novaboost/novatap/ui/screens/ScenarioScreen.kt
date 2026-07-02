@@ -207,7 +207,7 @@ fun ScenarioScreen(
                 horizontalArrangement = Arrangement.spacedBy(6.dp)
             ) {
                 Button(
-                    onClick = { viewModel.addScenarioStep("tap", 200, 500f, 1000f, "Point coordinates tap") },
+                    onClick = { viewModel.addScenarioStep("tap", MainViewModel.MIN_INTERVAL_MS, 500f, 1000f, "Point coordinates tap") },
                     colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.surface),
                     modifier = Modifier.weight(1f),
                     contentPadding = PaddingValues(horizontal = 4.dp, vertical = 6.dp),
@@ -217,7 +217,7 @@ fun ScenarioScreen(
                 }
 
                 Button(
-                    onClick = { viewModel.addScenarioStep("area", 400, 0f, 0f, "Stochastic Area tap") },
+                    onClick = { viewModel.addScenarioStep("area", MainViewModel.MIN_INTERVAL_MS, 0f, 0f, "Stochastic Area tap") },
                     colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.surface),
                     modifier = Modifier.weight(1f),
                     contentPadding = PaddingValues(horizontal = 4.dp, vertical = 6.dp),
@@ -227,7 +227,7 @@ fun ScenarioScreen(
                 }
 
                 Button(
-                    onClick = { viewModel.addScenarioStep("swipe", 800, 0f, 0f, "Drags Swipe stroke") },
+                    onClick = { viewModel.addScenarioStep("swipe", MainViewModel.MIN_INTERVAL_MS, 0f, 0f, "Drags Swipe stroke") },
                     colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.surface),
                     modifier = Modifier.weight(1f),
                     contentPadding = PaddingValues(horizontal = 4.dp, vertical = 6.dp),
@@ -242,7 +242,7 @@ fun ScenarioScreen(
                 horizontalArrangement = Arrangement.spacedBy(6.dp)
             ) {
                 Button(
-                    onClick = { viewModel.addScenarioStep("wait", 1000, 0f, 0f, "Delay timer") },
+                    onClick = { viewModel.addScenarioStep("wait", MainViewModel.MIN_INTERVAL_MS, 0f, 0f, "Delay timer") },
                     colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.surface),
                     modifier = Modifier.weight(1f),
                     contentPadding = PaddingValues(horizontal = 4.dp, vertical = 6.dp),

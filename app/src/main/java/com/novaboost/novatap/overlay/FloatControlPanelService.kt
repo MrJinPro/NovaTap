@@ -323,8 +323,11 @@ class FloatControlPanelService : Service() {
                 }
             }
 
-            // 3. Add Full-Screen Tap Visualizer Overlay (ONLY if enabled in settings or diagnostics is enabled to prevent clickjacking protection blocks)
-            if (viewModel.showTapRipples || viewModel.showDiagnostics) {
+                // 3. Add Full-Screen Tap Visualizer Overlay.
+                // In compatibility mode (Xiaomi/Redmi), hide it during active automation to reduce blocked-tap risk.
+                val shouldShowTapVisualizer = (viewModel.showTapRipples || viewModel.showDiagnostics) &&
+                    !(viewModel.compatibilityMode && isWorkspacePlaying)
+                if (shouldShowTapVisualizer) {
                 val visualizerParams = WindowManager.LayoutParams(
                     WindowManager.LayoutParams.MATCH_PARENT,
                     WindowManager.LayoutParams.MATCH_PARENT,
@@ -789,8 +792,8 @@ class FloatControlPanelService : Service() {
 
                         Button(
                             onClick = {
-                                val delay = delayStr.toLongOrNull()?.coerceAtLeast(10) ?: 300L
-                                val hold = holdStr.toLongOrNull()?.coerceAtLeast(10) ?: 50L
+                                val delay = delayStr.toLongOrNull()?.coerceAtLeast(MainViewModel.MIN_INTERVAL_MS) ?: MainViewModel.MIN_INTERVAL_MS
+                                val hold = holdStr.toLongOrNull()?.coerceAtLeast(MainViewModel.MIN_HOLD_MS) ?: MainViewModel.MIN_HOLD_MS
                                 onSave(delay, hold)
                                 try {
                                     windowManager?.removeView(timingDialogView)

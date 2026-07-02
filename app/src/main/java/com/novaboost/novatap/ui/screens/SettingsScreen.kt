@@ -91,9 +91,9 @@ fun SettingsScreen(
                         )
                         Text(
                             text = if (isPremium) 
-                                (if (isRu) "Без рекламы и ограничений по кликам" else "No ads and completely unlimited clicks") 
+                                (if (isRu) "Максимальная производительность, Human Touch и расширенный Прогрев" else "Higher performance, Human Touch, and advanced Warmup features") 
                             else 
-                                (if (isRu) "Лимит 50,000 кликов в сутки" else "Limit of 50,000 daily action triggers"),
+                                (if (isRu) "Базовая версия с ограничениями скорости и функций" else "Basic version with speed and feature limits"),
                             style = MaterialTheme.typography.bodySmall,
                             color = TextMuted
                         )
@@ -197,7 +197,7 @@ fun SettingsScreen(
                             color = Color.White
                         )
                         Text(
-                            text = if (isRu) "Получайте огромные лимиты или бесплатный Премиум" else "Get huge click limits or premium access for free",
+                            text = if (isRu) "Получайте Premium-дни и расширенные функции" else "Get premium days and advanced feature access",
                             style = MaterialTheme.typography.bodySmall,
                             color = TextMuted
                         )
@@ -233,7 +233,7 @@ fun SettingsScreen(
                             val rewardText = if (task.rewardPremiumDays > 0) {
                                 if (isRu) "+${task.rewardPremiumDays}д. Premium" else "+${task.rewardPremiumDays}d Premium"
                             } else {
-                                if (isRu) "+${task.rewardTaps / 1000}к кликов" else "+${task.rewardTaps / 1000}k limit"
+                                if (isRu) "+${task.rewardTaps / 1000}к boost" else "+${task.rewardTaps / 1000}k boost"
                             }
                             
                             Box(
@@ -546,6 +546,43 @@ fun SettingsScreen(
                             uncheckedTrackColor = Color.Gray.copy(alpha = 0.3f)
                         ),
                         modifier = Modifier.testTag("tap_ripples_switch")
+                    )
+                }
+
+                Divider(color = Color(0x1FFFFFFF), thickness = 1.dp, modifier = Modifier.padding(vertical = 12.dp))
+
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Column(modifier = Modifier.weight(1f).padding(end = 12.dp)) {
+                        Text(
+                            text = if (isRu) "Режим совместимости (Xiaomi/Redmi)" else "Compatibility Mode (Xiaomi/Redmi)",
+                            style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
+                            color = Color.White
+                        )
+                        Spacer(modifier = Modifier.height(4.dp))
+                        Text(
+                            text = if (isRu)
+                                "Отключает конфликтные визуальные слои во время автоклика и повышает стабильность на MIUI/HyperOS. Рекомендуется оставить включенным."
+                            else
+                                "Disables conflicting visual overlays while automation is running and improves MIUI/HyperOS reliability. Recommended to keep enabled.",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = TextMuted
+                        )
+                    }
+
+                    Switch(
+                        checked = viewModel.compatibilityMode,
+                        onCheckedChange = { viewModel.toggleCompatibilityMode(it) },
+                        colors = SwitchDefaults.colors(
+                            checkedThumbColor = CyberBlue,
+                            checkedTrackColor = CyberBlue.copy(alpha = 0.4f),
+                            uncheckedThumbColor = Color.Gray,
+                            uncheckedTrackColor = Color.Gray.copy(alpha = 0.3f)
+                        ),
+                        modifier = Modifier.testTag("compatibility_mode_switch")
                     )
                 }
 
